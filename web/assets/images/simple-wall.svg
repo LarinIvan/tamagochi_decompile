@@ -1,0 +1,10 @@
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="simple-wall" clip-path="url(#clip0_2774_16438)">
+<path id="WALL" d="M0 1080V0H1080V1080H0Z" fill="#BBDFDB"/>
+</g>
+<defs>
+<clipPath id="clip0_2774_16438">
+<rect width="1080" height="1080" fill="white"/>
+</clipPath>
+</defs>
+</svg>

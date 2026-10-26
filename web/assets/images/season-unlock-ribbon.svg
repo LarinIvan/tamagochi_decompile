@@ -1,0 +1,12 @@
+<svg width="196" height="30" viewBox="0 0 196 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="ribbon" clip-path="url(#clip0_648_19773)">
+<path id="Rectangle 604" d="M3.38029 4.91052C1.76436 2.95419 3.15586 0 5.69327 0H189.955C192.493 0 193.884 2.95418 192.268 4.91052L185.512 13.0895C184.596 14.1985 184.596 15.8015 185.512 16.9105L192.268 25.0895C193.884 27.0458 192.493 30 189.955 30H5.69328C3.15587 30 1.76436 27.0458 3.38029 25.0895L10.1361 16.9105C11.0521 15.8015 11.0521 14.1985 10.1361 13.0895L3.38029 4.91052Z" fill="#54B751"/>
+<rect id="Rectangle 606" opacity="0.2" x="107.324" y="-29.3491" width="17" height="74" transform="rotate(30 107.324 -29.3491)" fill="white"/>
+<rect id="Rectangle 607" opacity="0.2" x="135.383" y="-27.0049" width="13.1382" height="74" transform="rotate(30 135.383 -27.0049)" fill="white"/>
+</g>
+<defs>
+<clipPath id="clip0_648_19773">
+<rect width="196" height="30" fill="white"/>
+</clipPath>
+</defs>
+</svg>

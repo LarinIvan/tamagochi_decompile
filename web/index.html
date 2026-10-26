@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Finch: Self-Care Pet (Web Edition)</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="libs/lottie.min.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Top Status Bar -->
+    <header class="top-bar">
+      <div class="stat-pills">
+        <div class="pill streak" title="Дней подряд">
+          <span>🔥</span> <span id="streak-val">1</span>
+        </div>
+        <div class="pill energy" title="Энергия питомца">
+          <span>⚡</span> <span id="energy-val">35</span>/100
+        </div>
+        <div class="pill stones" title="Радужные камни">
+          <span>💎</span> <span id="stones-val">250</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn-icon" id="sound-btn" title="Звуки">🔔</button>
+        <button class="btn-icon" id="settings-btn" title="Профиль питомца">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Scrollable Content -->
+    <main class="content-scroll">
+      
+      <!-- Pet Nest Stage -->
+      <section class="pet-nest-card" id="pet-stage">
+        <div class="pet-info-header">
+          <span class="pet-name" id="pet-name">Бирби</span>
+          <span class="pet-stage-tag" id="pet-stage-tag">Малыш (Baby)</span>
+        </div>
+
+        <!-- Speech Bubble -->
+        <div class="speech-bubble" id="speech-bubble">
+          Привет, друг! Погладь меня или давай позаботимся о себе! ✨
+        </div>
+
+        <!-- Lottie Animation Box -->
+        <div class="lottie-box">
+          <div id="lottie-pet-container" style="width: 100%; height: 100%;"></div>
+          <div id="lottie-hearts-container" class="hearts-effect-layer"></div>
+        </div>
+
+        <div class="tap-hint">Нажми на питомца, чтобы погладить 💖</div>
+      </section>
+
+      <!-- Adventure Section -->
+      <section class="adventure-card">
+        <div class="adv-header">
+          <div class="adv-title">
+            <span>🗺️</span> <span>Приключение в лесу</span>
+          </div>
+          <span class="adv-status-text" id="adv-status-text">Нужно 30⚡ для старта</span>
+        </div>
+
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="adv-progress-bar"></div>
+        </div>
+
+        <button class="btn-adventure" id="start-adv-btn">
+          <span>🎒</span> <span>Отправить в путешествие (30⚡)</span>
+        </button>
+      </section>
+
+      <!-- Quick Self-Care Tools -->
+      <div class="section-title">
+        <span>Быстрые практики</span>
+      </div>
+      <div class="quick-tools-grid">
+        <div class="tool-card" id="tool-breathe">
+          <span class="tool-icon">🌬️</span>
+          <span class="tool-name">Дыхание</span>
+        </div>
+        <div class="tool-card" id="tool-water">
+          <span class="tool-icon">💧</span>
+          <span class="tool-name">Вода</span>
+        </div>
+        <div class="tool-card" id="tool-wardrobe">
+          <span class="tool-icon">🎨</span>
+          <span class="tool-name">Окрас</span>
+        </div>
+      </div>
+
+      <!-- Daily Goals Checklist -->
+      <div class="section-title">
+        <span>Цели заботы на сегодня</span>
+        <button class="btn-icon" id="add-goal-btn" style="width:28px; height:28px; font-size:14px;" title="Добавить цель">+</button>
+      </div>
+
+      <div class="goals-list" id="goals-list">
+        <!-- Injected via JavaScript -->
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" id="nav-home">
+        <span class="nav-icon">🏡</span>
+        <span>Гнездо</span>
+      </button>
+      <button class="nav-item" id="nav-adventure">
+        <span class="nav-icon">🗺️</span>
+        <span>Поход</span>
+      </button>
+      <button class="nav-item" id="nav-profile">
+        <span class="nav-icon">📊</span>
+        <span>Характер</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Story Dialogue Modal (Adventure Return) -->
+  <div class="modal-overlay" id="story-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title" id="story-modal-title">Весточка из путешествия!</span>
+        <button class="close-btn" id="close-story-btn">×</button>
+      </div>
+      <div class="story-dialog-box">
+        <div class="story-emoji" id="story-emoji">🐣</div>
+        <div class="story-text" id="story-prompt-text">
+          Загрузка истории...
+        </div>
+        <div class="story-choices" id="story-choices-container">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Breathing Exercise Modal -->
+  <div class="modal-overlay" id="breathing-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">Дыхание 4-4-4</span>
+        <button class="close-btn" id="close-breathing-btn">×</button>
+      </div>
+      <div class="breathing-box">
+        <div class="breathing-circle-wrap">
+          <div class="breathing-circle" id="breathe-circle">
+            <span id="breathe-seconds">4</span>
+          </div>
+        </div>
+        <div class="breathing-phase-text" id="breathe-phase-text">Приготовьтесь...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wardrobe Modal -->
+  <div class="modal-overlay" id="wardrobe-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">Цвет перышек</span>
+        <button class="close-btn" id="close-wardrobe-btn">×</button>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Выберите оттенок оперения для вашего питомца:</p>
+      <div class="color-picker-grid" id="color-picker-grid">
+        <div class="color-option selected" style="background: #FFB8B8;" data-color="#FFB8B8" data-name="Розовый">Розовый</div>
+        <div class="color-option" style="background: #A8E6CF;" data-color="#A8E6CF" data-name="Мятный">Мятный</div>
+        <div class="color-option" style="background: #90E0EF;" data-color="#90E0EF" data-name="Небесный">Небесный</div>
+        <div class="color-option" style="background: #D8B4E2;" data-color="#D8B4E2" data-name="Лаванда">Лаванда</div>
+        <div class="color-option" style="background: #FED766;" data-color="#FED766" data-name="Солнце">Солнце</div>
+        <div class="color-option" style="background: #FFD3B6;" data-color="#FFD3B6" data-name="Персик">Персик</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile & Traits Modal -->
+  <div class="modal-overlay" id="profile-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">Характер питомца</span>
+        <button class="close-btn" id="close-profile-btn">×</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="font-size: 14px; color: var(--text-muted);">
+          Каждое ваше решение в историях развивает личность питомца:
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600;">
+          <span>🔍 Любознательность (Curiosity):</span>
+          <span id="trait-curiosity" style="color:#6C5CE7;">0</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600;">
+          <span>💖 Сострадание (Compassion):</span>
+          <span id="trait-compassion" style="color:#E84393;">0</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600;">
+          <span>🛡️ Стойкость (Resilience):</span>
+          <span id="trait-resilience" style="color:#00B894;">0</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600;">
+          <span>🧠 Логика (Logic):</span>
+          <span id="trait-logic" style="color:#0984E3;">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
