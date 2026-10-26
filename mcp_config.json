@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "ghidra-mcp": {
+      "command": "F:\\PROJECTS\\Tamagochi_Decompile_v1\\ghidra-mcp\\.venv\\Scripts\\bridge-mcp-ghidra.exe",
+      "args": [
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "GHIDRA_MCP_URL": "http://127.0.0.1:8089",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    },
+    "rea": {
+      "command": "C:\\Users\\larin\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\larin\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
+        "--mcp"
+      ],
+      "env": {
+        "PATH": "C:\\Users\\larin\\nodejs;C:\\Users\\larin\\AppData\\Roaming\\npm;C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot\\bin;C:\\Windows\\system32;C:\\Windows"
+      }
+    }
+  }
+}
