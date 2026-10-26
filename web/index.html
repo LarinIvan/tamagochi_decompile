@@ -3,207 +3,322 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Finch: Self-Care Pet (Web Edition)</title>
+  <title>Finch: Self-Care Pet</title>
   <link rel="stylesheet" href="styles.css">
   <script src="libs/lottie.min.js"></script>
 </head>
 <body>
 
   <div class="app-container">
-    <!-- Top Status Bar -->
-    <header class="top-bar">
-      <div class="stat-pills">
-        <div class="pill streak" title="Дней подряд">
-          <span>🔥</span> <span id="streak-val">1</span>
-        </div>
-        <div class="pill energy" title="Энергия питомца">
-          <span>⚡</span> <span id="energy-val">35</span>/100
-        </div>
-        <div class="pill stones" title="Радужные камни">
-          <span>💎</span> <span id="stones-val">250</span>
+    <!-- Top HUD Status Bar -->
+    <header class="hud-top">
+      <div class="hud-pet-meta">
+        <button class="btn-icon" id="settings-btn" title="Настройки">
+          <img src="assets/icons/activities-settings.svg" alt="Настройки" class="svg-icon">
+        </button>
+        <div class="pet-titles">
+          <span class="pet-name" id="hud-pet-name">Бирби</span>
+          <span class="pet-sub" id="hud-pet-sub">Малыш • <span id="color-label">Серый</span></span>
         </div>
       </div>
-      <div class="top-actions">
-        <button class="btn-icon" id="sound-btn" title="Звуки">🔔</button>
-        <button class="btn-icon" id="settings-btn" title="Профиль питомца">⚙️</button>
+
+      <div class="hud-stats">
+        <div class="stat-badge" title="Стрик заботы (дней подряд)">
+          <img src="assets/icons/streak_star.svg" alt="Стрик" class="svg-icon-sm">
+          <span id="streak-val">1</span>
+        </div>
+        <div class="stat-badge" title="Энергия для приключений">
+          <img src="assets/icons/energy.svg" alt="Энергия" class="svg-icon-sm">
+          <span id="energy-val">35</span>/100
+        </div>
+        <div class="stat-badge" title="Радужные камни">
+          <img src="assets/icons/rainbow-stone.svg" alt="Камни" class="svg-icon-sm">
+          <span id="stones-val">250</span>
+        </div>
+        <button class="btn-icon-sm" id="sound-btn" title="Звуки">
+          <img src="assets/icons/speaker-waves.svg" alt="Звук" class="svg-icon-sm" id="sound-icon">
+        </button>
       </div>
     </header>
 
-    <!-- Scrollable Content -->
-    <main class="content-scroll">
-      
-      <!-- Pet Nest Stage -->
-      <section class="pet-nest-card" id="pet-stage">
-        <div class="pet-info-header">
-          <span class="pet-name" id="pet-name">Бирби</span>
-          <span class="pet-stage-tag" id="pet-stage-tag">Малыш (Baby)</span>
-        </div>
+    <!-- Main Content Tabs Container -->
+    <main class="tabs-viewport">
 
-        <!-- Speech Bubble -->
-        <div class="speech-bubble" id="speech-bubble">
-          Привет, друг! Погладь меня или давай позаботимся о себе! ✨
-        </div>
+      <!-- ================= TAB 1: ДОМИК (HOME / BIRDHOUSE) ================= -->
+      <section class="tab-pane active" id="tab-home">
+        
+        <!-- Birdhouse 2D Room -->
+        <div class="birdhouse-room" id="birdhouse-room">
+          <!-- Room Wallpaper Background -->
+          <div class="room-wallpaper" id="room-wallpaper"></div>
 
-        <!-- Lottie Animation Box -->
-        <div class="lottie-box">
-          <div id="lottie-pet-container" style="width: 100%; height: 100%;"></div>
-          <div id="lottie-hearts-container" class="hearts-effect-layer"></div>
-        </div>
+          <!-- Wall Decor: Window -->
+          <img src="assets/images/woodsy-window.svg" alt="Окно" class="room-item room-window" id="room-window">
+          
+          <!-- Wall Decor: Clock -->
+          <img src="assets/images/woodsy-clock.svg" alt="Часы" class="room-item room-clock" id="room-clock">
 
-        <div class="tap-hint">Нажми на питомца, чтобы погладить 💖</div>
-      </section>
+          <!-- Wall Decor: Door -->
+          <img src="assets/images/woodsy-door.svg" alt="Дверь" class="room-item room-door" id="room-door">
 
-      <!-- Adventure Section -->
-      <section class="adventure-card">
-        <div class="adv-header">
-          <div class="adv-title">
-            <span>🗺️</span> <span>Приключение в лесу</span>
+          <!-- Floor Decor: Rug -->
+          <img src="assets/images/woodsy-rug.svg" alt="Коврик" class="room-item room-rug" id="room-rug">
+
+          <!-- Floor Decor: Bed -->
+          <img src="assets/images/woodsy-bed.svg" alt="Кровать" class="room-item room-bed" id="room-bed">
+
+          <!-- Floor Decor: Lamp with Switch -->
+          <div class="room-lamp-wrapper" id="room-lamp-wrapper" title="Нажми, чтобы переключить свет">
+            <img src="assets/images/woodsy-lamp.svg" alt="Лампа" class="room-item room-lamp" id="room-lamp">
+            <div class="lamp-glow" id="lamp-glow"></div>
           </div>
-          <span class="adv-status-text" id="adv-status-text">Нужно 30⚡ для старта</span>
+
+          <!-- Comic Speech Bubble -->
+          <div class="speech-bubble" id="speech-bubble">
+            <span id="speech-text">Привет, друг! Нажми на меня, чтобы погладить, или давай позаботимся о себе!</span>
+            <div class="bubble-arrow"></div>
+          </div>
+
+          <!-- Centered Pet Character with Lottie -->
+          <div class="pet-stage-box" id="pet-stage-box" title="Погладь питомца!">
+            <div id="lottie-pet-container" class="lottie-layer"></div>
+            <div id="lottie-hearts-container" class="lottie-layer hearts-layer"></div>
+            
+            <!-- Clothing Overlay (Hats, Glasses) -->
+            <img src="assets/icons/transparent.svg" alt="" class="pet-wear-hat" id="pet-wear-hat">
+            <img src="assets/icons/transparent.svg" alt="" class="pet-wear-glasses" id="pet-wear-glasses">
+          </div>
+
+          <!-- Companion Micropet -->
+          <div class="micropet-box" id="micropet-box" title="Твой микропитомец!">
+            <div id="lottie-micropet-container" class="lottie-layer"></div>
+          </div>
+
+          <!-- Night Mode Overlay -->
+          <div class="room-night-overlay" id="room-night-overlay"></div>
         </div>
 
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill" id="adv-progress-bar"></div>
+        <!-- Room Quick Controls -->
+        <div class="room-controls-bar">
+          <button class="room-action-btn" id="light-toggle-btn">
+            <img src="assets/icons/activities-settings.svg" alt="" class="svg-icon-xs">
+            <span id="light-label">Выключить свет</span>
+          </button>
+          <button class="room-action-btn" id="quick-breathe-btn">
+            <img src="assets/icons/heart.svg" alt="" class="svg-icon-xs">
+            <span>Дыхание 4-4-4</span>
+          </button>
         </div>
 
-        <button class="btn-adventure" id="start-adv-btn">
-          <span>🎒</span> <span>Отправить в путешествие (30⚡)</span>
-        </button>
+        <!-- Adventure Card -->
+        <div class="adventure-cta-card">
+          <div class="adv-meta">
+            <div class="adv-headline">
+              <img src="assets/icons/backpack.svg" alt="" class="svg-icon">
+              <div>
+                <div class="adv-title">Приключение в лесу</div>
+                <div class="adv-subtitle" id="adv-energy-status">Энергия: 35/30 для старта</div>
+              </div>
+            </div>
+            <button class="btn-primary-adv" id="start-adventure-btn">
+              <span>Отправить (30 ⚡)</span>
+            </button>
+          </div>
+          <div class="adv-bar-track">
+            <div class="adv-bar-fill" id="adv-bar-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+
       </section>
 
-      <!-- Quick Self-Care Tools -->
-      <div class="section-title">
-        <span>Быстрые практики</span>
-      </div>
-      <div class="quick-tools-grid">
-        <div class="tool-card" id="tool-breathe">
-          <span class="tool-icon">🌬️</span>
-          <span class="tool-name">Дыхание</span>
+      <!-- ================= TAB 2: ЦЕЛИ (QUESTS / GOALS) ================= -->
+      <section class="tab-pane" id="tab-goals">
+        <div class="pane-header">
+          <h2>Цели заботы на сегодня</h2>
+          <button class="btn-secondary" id="add-goal-open-btn">+ Новая цель</button>
         </div>
-        <div class="tool-card" id="tool-water">
-          <span class="tool-icon">💧</span>
-          <span class="tool-name">Вода</span>
-        </div>
-        <div class="tool-card" id="tool-wardrobe">
-          <span class="tool-icon">🎨</span>
-          <span class="tool-name">Окрас</span>
-        </div>
-      </div>
 
-      <!-- Daily Goals Checklist -->
-      <div class="section-title">
-        <span>Цели заботы на сегодня</span>
-        <button class="btn-icon" id="add-goal-btn" style="width:28px; height:28px; font-size:14px;" title="Добавить цель">+</button>
-      </div>
+        <div class="goals-filter-bar">
+          <button class="filter-pill active" data-filter="all">Все</button>
+          <button class="filter-pill" data-filter="selfCare">Забота</button>
+          <button class="filter-pill" data-filter="body">Тело</button>
+          <button class="filter-pill" data-filter="mindfulness">Осознанность</button>
+        </div>
 
-      <div class="goals-list" id="goals-list">
-        <!-- Injected via JavaScript -->
-      </div>
+        <div class="goals-container" id="goals-list">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: ГАРДЕРОБ (BAG / WARDROBE) ================= -->
+      <section class="tab-pane" id="tab-wardrobe">
+        <div class="pane-header">
+          <h2>Гардероб и стиль</h2>
+        </div>
+
+        <!-- Color Palette -->
+        <div class="sub-section-title">Окрас перьев</div>
+        <div class="color-palette-row">
+          <button class="color-dot active" data-color="Classic Grey" style="background:#B0B7BD;" title="Classic Grey"></button>
+          <button class="color-dot" data-color="Sky Blue" style="background:#7AC1EB;" title="Sky Blue"></button>
+          <button class="color-dot" data-color="Blossom Pink" style="background:#F6A6B2;" title="Blossom Pink"></button>
+          <button class="color-dot" data-color="Matcha Green" style="background:#9BC472;" title="Matcha Green"></button>
+          <button class="color-dot" data-color="Honey Yellow" style="background:#F9D265;" title="Honey Yellow"></button>
+        </div>
+
+        <!-- Hats -->
+        <div class="sub-section-title">Головные уборы</div>
+        <div class="wardrobe-items-grid" id="wardrobe-hats-grid"></div>
+
+        <!-- Glasses -->
+        <div class="sub-section-title">Очки и аксессуары</div>
+        <div class="wardrobe-items-grid" id="wardrobe-glasses-grid"></div>
+
+        <!-- Micropets Selector -->
+        <div class="sub-section-title">Спутник (Микропитомец)</div>
+        <div class="micropets-selector-row" id="micropets-grid"></div>
+      </section>
+
+      <!-- ================= TAB 4: МАГАЗИН (MR. PRICKLES' SHOP) ================= -->
+      <section class="tab-pane" id="tab-shop">
+        <div class="shop-banner-card">
+          <img src="assets/icons/shop.svg" alt="Магазин" class="shop-hero-icon">
+          <div>
+            <h3>Лавка Мистера Приклза</h3>
+            <p>Уютная мебель для домика и стильная одежда!</p>
+          </div>
+        </div>
+
+        <div class="shop-category-title">Товары дня</div>
+        <div class="shop-items-grid" id="shop-items-grid">
+          <!-- Injected via JS -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 5: ДЕРЕВО ДРУЗЕЙ (TREE TOWN) ================= -->
+      <section class="tab-pane" id="tab-tree">
+        <div class="tree-banner-card">
+          <img src="assets/icons/tree.svg" alt="Дерево друзей" class="tree-hero-icon">
+          <div>
+            <h3>Дерево друзей (Tree Town)</h3>
+            <p>Отправляй лучи добра (Good Vibes) своим соседям!</p>
+          </div>
+        </div>
+
+        <div class="friends-list" id="friends-list">
+          <div class="friend-card">
+            <img src="assets/icons/bird-baby.svg" alt="Робин" class="friend-avatar">
+            <div class="friend-info">
+              <div class="friend-name">Робин</div>
+              <div class="friend-desc">Малыш • Классический серый</div>
+            </div>
+            <button class="btn-good-vibes" data-friend="Робин">
+              <img src="assets/icons/heart.svg" alt="" class="svg-icon-xs">
+              <span>Добро</span>
+            </button>
+          </div>
+
+          <div class="friend-card">
+            <img src="assets/icons/bird-heart-eyes.svg" alt="Пип" class="friend-avatar">
+            <div class="friend-info">
+              <div class="friend-name">Пип</div>
+              <div class="friend-desc">Малыш • Небесно-голубой</div>
+            </div>
+            <button class="btn-good-vibes" data-friend="Пип">
+              <img src="assets/icons/heart.svg" alt="" class="svg-icon-xs">
+              <span>Добро</span>
+            </button>
+          </div>
+
+          <div class="friend-card">
+            <img src="assets/icons/bird-baby.svg" alt="Санни" class="friend-avatar">
+            <div class="friend-info">
+              <div class="friend-name">Санни</div>
+              <div class="friend-desc">Малыш • Медово-жёлтый</div>
+            </div>
+            <button class="btn-good-vibes" data-friend="Санни">
+              <img src="assets/icons/heart.svg" alt="" class="svg-icon-xs">
+              <span>Добро</span>
+            </button>
+          </div>
+        </div>
+      </section>
 
     </main>
 
-    <!-- Bottom Navigation -->
+    <!-- Bottom Navigation Bar (5 Authentic Tabs) -->
     <nav class="bottom-nav">
-      <button class="nav-item active" id="nav-home">
-        <span class="nav-icon">🏡</span>
-        <span>Гнездо</span>
+      <button class="nav-tab active" data-tab="tab-home">
+        <img src="assets/icons/home_button_full.svg" alt="Домик" class="nav-svg">
+        <span>Домик</span>
       </button>
-      <button class="nav-item" id="nav-adventure">
-        <span class="nav-icon">🗺️</span>
-        <span>Поход</span>
+      <button class="nav-tab" data-tab="tab-goals">
+        <img src="assets/icons/goals.svg" alt="Цели" class="nav-svg">
+        <span>Цели</span>
       </button>
-      <button class="nav-item" id="nav-profile">
-        <span class="nav-icon">📊</span>
-        <span>Характер</span>
+      <button class="nav-tab" data-tab="tab-wardrobe">
+        <img src="assets/icons/backpack.svg" alt="Гардероб" class="nav-svg">
+        <span>Гардероб</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-shop">
+        <img src="assets/icons/shop.svg" alt="Магазин" class="nav-svg">
+        <span>Магазин</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-tree">
+        <img src="assets/icons/tree.svg" alt="Друзья" class="nav-svg">
+        <span>Друзья</span>
       </button>
     </nav>
-  </div>
 
-  <!-- Story Dialogue Modal (Adventure Return) -->
-  <div class="modal-overlay" id="story-modal">
-    <div class="modal-box">
-      <div class="modal-header">
-        <span class="modal-title" id="story-modal-title">Весточка из путешествия!</span>
-        <button class="close-btn" id="close-story-btn">×</button>
-      </div>
-      <div class="story-dialog-box">
-        <div class="story-emoji" id="story-emoji">🐣</div>
-        <div class="story-text" id="story-prompt-text">
-          Загрузка истории...
+    <!-- ================= MODALS ================= -->
+
+    <!-- Adventure Story Result Modal -->
+    <div class="modal-overlay" id="adventure-modal">
+      <div class="modal-card">
+        <div class="adv-modal-header">
+          <img src="assets/icons/bird-baby.svg" alt="" class="adv-modal-birb-icon">
+          <div class="modal-title" id="adv-story-title">Приключение завершено!</div>
         </div>
-        <div class="story-choices" id="story-choices-container">
-          <!-- Injected via JavaScript -->
-        </div>
+        <p class="adv-story-text" id="adv-story-text"></p>
+        <div class="adv-story-question" id="adv-story-question"></div>
+        <div class="adv-choices-list" id="adv-choices-list"></div>
       </div>
     </div>
-  </div>
 
-  <!-- Breathing Exercise Modal -->
-  <div class="modal-overlay" id="breathing-modal">
-    <div class="modal-box">
-      <div class="modal-header">
-        <span class="modal-title">Дыхание 4-4-4</span>
-        <button class="close-btn" id="close-breathing-btn">×</button>
-      </div>
-      <div class="breathing-box">
-        <div class="breathing-circle-wrap">
-          <div class="breathing-circle" id="breathe-circle">
-            <span id="breathe-seconds">4</span>
+    <!-- Breathing Practice Modal (4-4-4) -->
+    <div class="modal-overlay" id="breathe-modal">
+      <div class="modal-card breathe-card">
+        <button class="modal-close-btn" id="breathe-close-btn">✕</button>
+        <div class="modal-title">Осознанное дыхание</div>
+        <p class="breathe-desc">Медленный вдох, задержка и плавный выдох помогут расслабиться.</p>
+        
+        <div class="breathe-circle-container">
+          <div class="breathe-circle" id="breathe-circle">
+            <span class="breathe-phase-text" id="breathe-phase">Приготовьтесь</span>
+            <span class="breathe-timer" id="breathe-timer">4</span>
           </div>
         </div>
-        <div class="breathing-phase-text" id="breathe-phase-text">Приготовьтесь...</div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Wardrobe Modal -->
-  <div class="modal-overlay" id="wardrobe-modal">
-    <div class="modal-box">
-      <div class="modal-header">
-        <span class="modal-title">Цвет перышек</span>
-        <button class="close-btn" id="close-wardrobe-btn">×</button>
-      </div>
-      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Выберите оттенок оперения для вашего питомца:</p>
-      <div class="color-picker-grid" id="color-picker-grid">
-        <div class="color-option selected" style="background: #FFB8B8;" data-color="#FFB8B8" data-name="Розовый">Розовый</div>
-        <div class="color-option" style="background: #A8E6CF;" data-color="#A8E6CF" data-name="Мятный">Мятный</div>
-        <div class="color-option" style="background: #90E0EF;" data-color="#90E0EF" data-name="Небесный">Небесный</div>
-        <div class="color-option" style="background: #D8B4E2;" data-color="#D8B4E2" data-name="Лаванда">Лаванда</div>
-        <div class="color-option" style="background: #FED766;" data-color="#FED766" data-name="Солнце">Солнце</div>
-        <div class="color-option" style="background: #FFD3B6;" data-color="#FFD3B6" data-name="Персик">Персик</div>
+        <button class="btn-primary" id="breathe-start-btn">Начать практику</button>
       </div>
     </div>
-  </div>
 
-  <!-- Profile & Traits Modal -->
-  <div class="modal-overlay" id="profile-modal">
-    <div class="modal-box">
-      <div class="modal-header">
-        <span class="modal-title">Характер питомца</span>
-        <button class="close-btn" id="close-profile-btn">×</button>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        <div style="font-size: 14px; color: var(--text-muted);">
-          Каждое ваше решение в историях развивает личность питомца:
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600;">
-          <span>🔍 Любознательность (Curiosity):</span>
-          <span id="trait-curiosity" style="color:#6C5CE7;">0</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600;">
-          <span>💖 Сострадание (Compassion):</span>
-          <span id="trait-compassion" style="color:#E84393;">0</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600;">
-          <span>🛡️ Стойкость (Resilience):</span>
-          <span id="trait-resilience" style="color:#00B894;">0</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600;">
-          <span>🧠 Логика (Logic):</span>
-          <span id="trait-logic" style="color:#0984E3;">0</span>
-        </div>
+    <!-- Add Goal Modal -->
+    <div class="modal-overlay" id="add-goal-modal">
+      <div class="modal-card">
+        <button class="modal-close-btn" id="add-goal-close-btn">✕</button>
+        <div class="modal-title">Новая цель заботы</div>
+        <input type="text" id="new-goal-input" class="custom-input" placeholder="Например: Сделать зарядку">
+        <div class="sub-section-title">Категория:</div>
+        <select id="new-goal-category" class="custom-select">
+          <option value="selfCare">Забота о себе</option>
+          <option value="body">Физическое здоровье</option>
+          <option value="mindfulness">Осознанность и покой</option>
+        </select>
+        <button class="btn-primary" id="save-goal-btn" style="margin-top:16px;">Добавить цель (+5 ⚡)</button>
       </div>
     </div>
+
   </div>
 
   <script src="app.js"></script>
