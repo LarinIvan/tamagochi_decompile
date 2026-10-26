@@ -22,6 +22,8 @@ dist/
 *.tar.gz
 *.log
 *.tmp
+*.apk
+*.xapk
 
 # Ghidra user / runtime artifacts
 *.rep/
