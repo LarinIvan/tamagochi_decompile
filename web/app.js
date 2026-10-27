@@ -1187,4 +1187,160 @@ document.addEventListener('DOMContentLoaded', async () => {
       showSpeechBubble(`Вы отправили лучи добра ${friend}! +10 💎!`);
     });
   });
+
+  // Settings & Profile
+  document.getElementById('settings-btn')?.addEventListener('click', openSettingsModal);
+  document.getElementById('settings-close-btn')?.addEventListener('click', () => {
+    document.getElementById('settings-modal')?.classList.remove('open');
+  });
+  document.getElementById('settings-save-btn')?.addEventListener('click', saveSettings);
+  document.getElementById('export-data-btn')?.addEventListener('click', exportBackupData);
+  document.getElementById('import-data-file')?.addEventListener('change', (e) => {
+    importBackupData(e.target.files[0]);
+  });
+
+  // First Aid Grounding
+  document.getElementById('first-aid-btn')?.addEventListener('click', startFirstAid);
+  document.getElementById('first-aid-close-btn')?.addEventListener('click', () => {
+    document.getElementById('first-aid-modal')?.classList.remove('open');
+  });
+  document.getElementById('first-aid-next-btn')?.addEventListener('click', nextFirstAidStep);
 });
+
+// ================= FIRST AID GROUNDING (5-4-3-2-1) =================
+const FIRST_AID_STEPS = [
+  { num: 5, text: 'Посмотрите вокруг и найдите 5 вещей, которые вы видите прямо сейчас (цвет книги, узор на стене, свет за окном).' },
+  { num: 4, text: 'Ощутите 4 вещи, к которым вы можете прикоснуться (текстура одежды, прохлада стола, твердость пола).' },
+  { num: 3, text: 'Прислушайтесь и отметьте 3 звука вокруг вас (тиканье часов, шум за окном, ваше спокойное дыхание).' },
+  { num: 2, text: 'Почувствуйте 2 запаха рядом с вами (свежий воздух, аромат чая или мыла).' },
+  { num: 1, text: 'Скажите себе 1 доброе и ободряющее слово («Я в безопасности. Я справлюсь с этим шагом»).' }
+];
+
+let firstAidCurrentStep = 0;
+
+function startFirstAid() {
+  firstAidCurrentStep = 0;
+  const modal = document.getElementById('first-aid-modal');
+  modal?.classList.add('open');
+  renderFirstAidStep();
+}
+
+function renderFirstAidStep() {
+  const cur = FIRST_AID_STEPS[firstAidCurrentStep];
+  const numEl = document.getElementById('fa-num');
+  const textEl = document.getElementById('fa-text');
+  const btn = document.getElementById('first-aid-next-btn');
+
+  if (numEl) numEl.textContent = cur.num;
+  if (textEl) textEl.textContent = cur.text;
+  if (btn) {
+    btn.textContent = firstAidCurrentStep === FIRST_AID_STEPS.length - 1 ? 'Завершить практику (+10 ⚡)' : 'Следующий шаг';
+  }
+}
+
+function nextFirstAidStep() {
+  firstAidCurrentStep++;
+  playSound(AUDIO.boopty);
+  if (firstAidCurrentStep >= FIRST_AID_STEPS.length) {
+    playSound(AUDIO.bonus);
+    appState.pet.energy = Math.min(appState.pet.maxEnergy, appState.pet.energy + 10);
+    appState.pet.stones += 25;
+    saveState();
+    renderHUD();
+    document.getElementById('first-aid-modal')?.classList.remove('open');
+    showSpeechBubble('Отличное заземление! Ты в безопасности и под защитой 🛡️');
+  } else {
+    renderFirstAidStep();
+  }
+}
+
+// ================= SETTINGS & PROFILE =================
+function openSettingsModal() {
+  const modal = document.getElementById('settings-modal');
+  if (!modal) return;
+
+  const petNameInput = document.getElementById('settings-pet-name');
+  const ownerNameInput = document.getElementById('settings-owner-name');
+  if (petNameInput) petNameInput.value = appState.pet.name;
+  if (ownerNameInput) ownerNameInput.value = appState.pet.ownerName;
+
+  renderSettingsTraits();
+  modal.classList.add('open');
+}
+
+function renderSettingsTraits() {
+  const container = document.getElementById('settings-traits-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const traits = [
+    { key: 'Curiosity', label: 'Любознательность', val: appState.pet.traits?.Curiosity || 15 },
+    { key: 'Compassion', label: 'Сострадание', val: appState.pet.traits?.Compassion || 20 },
+    { key: 'Resilience', label: 'Стойкость', val: appState.pet.traits?.Resilience || 10 },
+    { key: 'Logic', label: 'Логика и ясность', val: appState.pet.traits?.Logic || 12 }
+  ];
+
+  traits.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'trait-bar-row';
+    const pct = Math.min(100, Math.round((t.val / 50) * 100));
+    row.innerHTML = `
+      <span style="width:130px;">${t.label}</span>
+      <div class="trait-bar-track">
+        <div class="trait-bar-fill" style="width:${pct}%;"></div>
+      </div>
+      <span style="width:30px; text-align:right;">${t.val}</span>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function saveSettings() {
+  const petNameInput = document.getElementById('settings-pet-name');
+  const ownerNameInput = document.getElementById('settings-owner-name');
+  if (petNameInput && petNameInput.value.trim()) {
+    appState.pet.name = petNameInput.value.trim();
+  }
+  if (ownerNameInput && ownerNameInput.value.trim()) {
+    appState.pet.ownerName = ownerNameInput.value.trim();
+  }
+  saveState();
+  renderHUD();
+  document.getElementById('settings-modal')?.classList.remove('open');
+  playSound(AUDIO.boopty);
+  showSpeechBubble(`Настройки сохранены! Приятно познакомиться, ${appState.pet.ownerName}! ✨`);
+}
+
+function exportBackupData() {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+  const dlAnchor = document.createElement('a');
+  dlAnchor.setAttribute("href", dataStr);
+  dlAnchor.setAttribute("download", `finch_backup_${Date.now()}.json`);
+  document.body.appendChild(dlAnchor);
+  dlAnchor.click();
+  dlAnchor.remove();
+  playSound(AUDIO.bonus);
+}
+
+function importBackupData(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (imported && imported.pet) {
+        appState = { ...DEFAULT_STATE, ...imported };
+        saveState();
+        renderAll();
+        initPetLottie();
+        initMrPricklesLottie();
+        document.getElementById('settings-modal')?.classList.remove('open');
+        playSound(AUDIO.magic);
+        showSpeechBubble('Данные успешно восстановлены из резервной копии! 🌟');
+      }
+    } catch (err) {
+      alert('Ошибка чтения файла резервной копии: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}

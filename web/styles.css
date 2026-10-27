@@ -1210,3 +1210,57 @@ body {
   border-radius: var(--radius-sm);
   font-family: inherit; font-size: 13px; margin-top: 6px;
 }
+
+/* First Aid SOS */
+.first-aid-step-box {
+  background: #F2F7F4;
+  border: 2px solid var(--primary-green-light);
+  border-radius: var(--radius-md);
+  padding: 20px 16px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.first-aid-num {
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--primary-green-dark);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.first-aid-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  line-height: 1.4;
+}
+
+/* Settings & Traits */
+.settings-section {
+  margin-bottom: 14px;
+}
+.traits-bars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.trait-bar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+}
+.trait-bar-track {
+  flex: 1;
+  height: 8px;
+  background: #E8E2D2;
+  border-radius: 4px;
+  margin: 0 10px;
+  overflow: hidden;
+}
+.trait-bar-fill {
+  height: 100%;
+  background: var(--primary-green);
+  border-radius: 4px;
+}

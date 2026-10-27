@@ -296,6 +296,10 @@
               <img src="assets/icons/heart.svg" alt="" class="svg-icon-xs">
               <span>Дыхание 4-4-4</span>
             </button>
+            <button class="room-action-btn" id="first-aid-btn" title="Скорая помощь при тревоге">
+              <img src="assets/icons/shield.svg" alt="" class="svg-icon-xs" onerror="this.src='assets/icons/heart.svg'">
+              <span>SOS Заземление</span>
+            </button>
             <button class="room-action-btn" id="restart-onboarding-btn" title="Заново пройти опрос">
               <img src="assets/icons/arrow-clockwise.svg" alt="" class="svg-icon-xs">
               <span>Опрос</span>
@@ -545,6 +549,60 @@
           <option value="mindfulness">Осознанность и покой</option>
         </select>
         <button class="btn-primary" id="save-goal-btn" style="margin-top:16px;">Добавить цель (+5 ⚡)</button>
+      </div>
+    </div>
+
+    <!-- First Aid SOS Grounding Modal (5-4-3-2-1) -->
+    <div class="modal-overlay" id="first-aid-modal">
+      <div class="modal-card">
+        <button class="modal-close-btn" id="first-aid-close-btn">✕</button>
+        <div class="modal-title">Скорая помощь: Заземление 5-4-3-2-1</div>
+        <p class="breathe-desc">Эта клиническая техника помогает вернуть контроль и снять острую тревогу, возвращая вас в настоящий момент.</p>
+        
+        <div class="first-aid-step-box" id="first-aid-step-box">
+          <div class="first-aid-num" id="fa-num">5</div>
+          <div class="first-aid-text" id="fa-text">Посмотрите вокруг и найдите 5 вещей, которые вы видите прямо сейчас.</div>
+        </div>
+
+        <button class="btn-primary" id="first-aid-next-btn">Следующий шаг</button>
+      </div>
+    </div>
+
+    <!-- Settings & Profile Modal -->
+    <div class="modal-overlay" id="settings-modal">
+      <div class="modal-card">
+        <button class="modal-close-btn" id="settings-close-btn">✕</button>
+        <div class="modal-title">Настройки и Профиль</div>
+        
+        <div class="settings-section">
+          <div class="sub-section-title">Имя питомца:</div>
+          <input type="text" id="settings-pet-name" class="custom-input">
+        </div>
+
+        <div class="settings-section">
+          <div class="sub-section-title">Ваше имя (как обращаться к вам):</div>
+          <input type="text" id="settings-owner-name" class="custom-input">
+        </div>
+
+        <div class="settings-section">
+          <div class="sub-section-title">Черты характера питомца:</div>
+          <div class="traits-bars-list" id="settings-traits-list">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <div class="settings-section" style="margin-top:16px;">
+          <div class="sub-section-title">Резервная копия данных (Finch Backup):</div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-secondary" id="export-data-btn" style="flex:1;">Скачать JSON</button>
+            <label class="btn-secondary" style="flex:1; text-align:center; cursor:pointer;">
+              Загрузить JSON
+              <input type="file" id="import-data-file" accept=".json" style="display:none;">
+            </label>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="settings-save-btn" style="margin-top:20px;">Сохранить настройки</button>
       </div>
     </div>
 
