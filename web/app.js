@@ -1,21 +1,28 @@
-// Finch: Self-Care Pet - Authentic Web Engine
+// Finch: Self-Care Pet - Authentic Web Engine & Reconstruction
+// Fully authentic recreation of Finch (Dart AOT / Flutter) with NUX Onboarding,
+// Clinical Assessments (GAD-7 & PHQ-9), Egg Warming/Hatching Ceremony,
+// Birdhouse Room, Feed Mood Check-in, Mr. Prickles Shop, Wardrobe & Tree Town.
 
-// ================= STATE =================
-const STATE_KEY = 'finch_app_state_v2';
+// ================= STATE & PERSISTENCE =================
+const STATE_KEY = 'finch_app_state_v3';
 
 const DEFAULT_STATE = {
+  hasCompletedNux: false,
   pet: {
     name: 'Бирби',
+    pronouns: 'Они / Их',
+    ownerName: 'Друг',
     streak: 1,
     energy: 35,
     maxEnergy: 100,
-    stones: 320,
+    stones: 250,
     color: 'Classic Grey',
     isSleeping: false,
     activeHat: '',
     activeGlasses: '',
     activeMicropet: 'CMP_Beaky_01.json',
-    traits: { Curiosity: 15, Compassion: 20, Resilience: 10, Logic: 12 }
+    traits: { Curiosity: 15, Compassion: 20, Resilience: 10, Logic: 12 },
+    todayMood: null
   },
   birdhouse: {
     wallpaper: 'woodsy-wall.svg',
@@ -29,13 +36,20 @@ const DEFAULT_STATE = {
   },
   goals: [
     { id: 'g1', title: 'Выпить стакан чистой воды', category: 'selfCare', energy: 5, stones: 20, completed: false, icon: 'badge-checkmark.svg' },
-    { id: 'g2', title: 'Потянуться и размять шею', category: 'body', energy: 5, stones: 20, completed: false, icon: 'badge-checkmark.svg' },
-    { id: 'g3', title: 'Осознанное дыхание 4-4-4', category: 'mindfulness', energy: 10, stones: 35, completed: false, icon: 'badge-checkmark.svg' },
-    { id: 'g4', title: 'Сказать себе добрые слова', category: 'selfCare', energy: 5, stones: 20, completed: false, icon: 'badge-checkmark.svg' },
-    { id: 'g5', title: 'Проветрить комнату', category: 'selfCare', energy: 5, stones: 20, completed: false, icon: 'badge-checkmark.svg' }
+    { id: 'g2', title: 'Сделать один глубокий вдох', category: 'mindfulness', energy: 5, stones: 20, completed: false, icon: 'badge-checkmark.svg' },
+    { id: 'g3', title: 'Сказать себе добрые слова', category: 'selfCare', energy: 5, stones: 20, completed: false, icon: 'badge-checkmark.svg' },
+    { id: 'g4', title: 'Потянуться и расправить плечи', category: 'body', energy: 5, stones: 20, completed: false, icon: 'badge-checkmark.svg' },
+    { id: 'g5', title: 'Осознанное дыхание 4-4-4', category: 'mindfulness', energy: 10, stones: 35, completed: false, icon: 'badge-checkmark.svg' }
   ],
   purchasedItems: ['alps-hat.svg', 'groovy-heart-glasses.svg'],
-  soundEnabled: true
+  soundEnabled: true,
+  nuxData: {
+    intent: 'anxiety',
+    gad7Scores: [1, 1, 1, 1],
+    phq9Scores: [1, 1, 1, 1],
+    chosenEgg: 'egg-blue.svg',
+    chosenTheme: 'Sky Blue'
+  }
 };
 
 let appState = loadState();
@@ -43,9 +57,12 @@ let appState = loadState();
 function loadState() {
   try {
     const raw = localStorage.getItem(STATE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...DEFAULT_STATE, ...parsed, pet: { ...DEFAULT_STATE.pet, ...parsed.pet }, birdhouse: { ...DEFAULT_STATE.birdhouse, ...parsed.birdhouse } };
+    }
   } catch (e) {
-    console.warn('Storage error:', e);
+    console.warn('Storage read error:', e);
   }
   return JSON.parse(JSON.stringify(DEFAULT_STATE));
 }
@@ -53,7 +70,9 @@ function loadState() {
 function saveState() {
   try {
     localStorage.setItem(STATE_KEY, JSON.stringify(appState));
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Storage save error:', e);
+  }
 }
 
 // ================= AUDIO ENGINE =================
@@ -64,13 +83,14 @@ const AUDIO = {
   boopty: new Audio('assets/audio/boopty.m4a'),
   magic: new Audio('assets/audio/floaty-magic.m4a'),
   hatch: new Audio('assets/audio/eggHatch.m4a'),
+  bubbles: new Audio('assets/audio/bubbles.m4a'),
   breatheIn: new Audio('assets/audio/breathe_in.m4a'),
   breatheHold: new Audio('assets/audio/breathe_hold.m4a'),
   breatheOut: new Audio('assets/audio/breathe_out.m4a')
 };
 
 function playSound(audioObj) {
-  if (!appState.soundEnabled) return;
+  if (!appState.soundEnabled || !audioObj) return;
   try {
     audioObj.currentTime = 0;
     audioObj.play().catch(() => {});
@@ -81,16 +101,20 @@ function playSound(audioObj) {
 let petLottie = null;
 let heartsLottie = null;
 let micropetLottie = null;
+let mrPricklesLottie = null;
+let hatchLottie = null;
 
-function initLotties() {
-  const petContainer = document.getElementById('lottie-pet-container');
+function initPetLottie() {
+  const container = document.getElementById('lottie-pet-container');
+  if (!container) return;
+
   const animFile = appState.birdhouse.isLightOn
     ? 'assets/animations/CB01_Full_01.1_Naked.json'
     : 'assets/animations/Finch_Sleepy in Bed_01.json';
 
   if (petLottie) petLottie.destroy();
   petLottie = lottie.loadAnimation({
-    container: petContainer,
+    container: container,
     renderer: 'svg',
     loop: true,
     autoplay: true,
@@ -98,19 +122,23 @@ function initLotties() {
   });
 
   const heartsContainer = document.getElementById('lottie-hearts-container');
-  heartsLottie = lottie.loadAnimation({
-    container: heartsContainer,
-    renderer: 'svg',
-    loop: false,
-    autoplay: false,
-    path: 'assets/animations/Effects_Solo_Hearts_01.json'
-  });
+  if (heartsContainer) {
+    if (heartsLottie) heartsLottie.destroy();
+    heartsLottie = lottie.loadAnimation({
+      container: heartsContainer,
+      renderer: 'svg',
+      loop: false,
+      autoplay: false,
+      path: 'assets/animations/Effects_Solo_Hearts_01.json'
+    });
+  }
 
   updateMicropetLottie();
 }
 
 function updateMicropetLottie() {
   const container = document.getElementById('lottie-micropet-container');
+  if (!container) return;
   if (micropetLottie) micropetLottie.destroy();
   if (!appState.pet.activeMicropet) return;
 
@@ -123,21 +151,403 @@ function updateMicropetLottie() {
   });
 }
 
+function initMrPricklesLottie() {
+  const container = document.getElementById('mr-prickles-lottie');
+  if (!container) return;
+  if (mrPricklesLottie) return; // already initialized
+
+  mrPricklesLottie = lottie.loadAnimation({
+    container: container,
+    renderer: 'svg',
+    loop: true,
+    autoplay: true,
+    path: 'assets/animations/NPC_MrPrickles.json'
+  });
+}
+
+// ================= ONBOARDING (NUX) ENGINE =================
+const GAD7_QUESTIONS = [
+  'Чувство нервозности, повышенной тревоги или нахождения на взводе',
+  'Неспособность остановить или контролировать постоянное беспокойство',
+  'Трудности с расслаблением и обретением внутреннего покоя',
+  'Чрезмерное беспокойство по самым разным жизненным поводам'
+];
+
+const PHQ9_QUESTIONS = [
+  'Мало интереса или удовольствия от привычных дел и увлечений',
+  'Чувство подавленности, грусти, тоски или безнадёжности',
+  'Трудности с засыпанием, беспокойный сон или сонливость',
+  'Чувство усталости или нехватка жизненной энергии'
+];
+
+const FREQ_OPTIONS = [
+  'Совсем нет',
+  'Несколько дней',
+  'Более 7 дней',
+  'Почти каждый день'
+];
+
+let nuxCurrentStep = 1;
+const NUX_TOTAL_STEPS = 8;
+let eggWarmth = 0;
+let eggHatched = false;
+
+function initOnboarding() {
+  const onboardingEl = document.getElementById('onboarding-flow');
+  const mainAppEl = document.getElementById('main-app');
+
+  if (!appState.hasCompletedNux) {
+    onboardingEl.classList.add('active');
+    mainAppEl.classList.add('hidden');
+    renderNuxStep(1);
+  } else {
+    onboardingEl.classList.remove('active');
+    mainAppEl.classList.remove('hidden');
+    renderAll();
+    initPetLottie();
+    initMrPricklesLottie();
+  }
+
+  setupNuxEvents();
+}
+
+function updateNuxProgress(step) {
+  const fill = document.getElementById('nux-progress-fill');
+  if (fill) {
+    const pct = Math.round((step / NUX_TOTAL_STEPS) * 100);
+    fill.style.width = pct + '%';
+  }
+}
+
+function renderNuxStep(stepIndex) {
+  nuxCurrentStep = stepIndex;
+  updateNuxProgress(stepIndex);
+
+  document.querySelectorAll('.nux-step').forEach(stepEl => {
+    stepEl.classList.remove('active');
+  });
+
+  const stepMap = {
+    1: 'nux-step-welcome',
+    2: 'nux-step-gad7',
+    3: 'nux-step-phq9',
+    4: 'nux-step-plan',
+    5: 'nux-step-egg',
+    6: 'nux-step-hatch',
+    7: 'nux-step-name',
+    8: 'nux-step-first-goals'
+  };
+
+  const currentEl = document.getElementById(stepMap[stepIndex]);
+  if (currentEl) currentEl.classList.add('active');
+
+  if (stepIndex === 2) renderGad7Questions();
+  if (stepIndex === 3) renderPhq9Questions();
+  if (stepIndex === 6) setupHatchStage();
+}
+
+function renderGad7Questions() {
+  const container = document.getElementById('gad7-questions-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  GAD7_QUESTIONS.forEach((q, qIdx) => {
+    const block = document.createElement('div');
+    block.className = 'survey-question-block';
+    block.innerHTML = `
+      <div class="survey-q-title">${qIdx + 1}. ${q}</div>
+      <div class="survey-choices-row" data-qindex="${qIdx}">
+        ${FREQ_OPTIONS.map((opt, oIdx) => `
+          <button type="button" class="survey-choice-btn ${appState.nuxData.gad7Scores[qIdx] === oIdx ? 'selected' : ''}" data-val="${oIdx}">
+            ${opt}
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    block.querySelectorAll('.survey-choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        block.querySelectorAll('.survey-choice-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        const val = parseInt(btn.getAttribute('data-val'), 10);
+        appState.nuxData.gad7Scores[qIdx] = val;
+        playSound(AUDIO.boopty);
+      });
+    });
+
+    container.appendChild(block);
+  });
+}
+
+function renderPhq9Questions() {
+  const container = document.getElementById('phq9-questions-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  PHQ9_QUESTIONS.forEach((q, qIdx) => {
+    const block = document.createElement('div');
+    block.className = 'survey-question-block';
+    block.innerHTML = `
+      <div class="survey-q-title">${qIdx + 1}. ${q}</div>
+      <div class="survey-choices-row" data-qindex="${qIdx}">
+        ${FREQ_OPTIONS.map((opt, oIdx) => `
+          <button type="button" class="survey-choice-btn ${appState.nuxData.phq9Scores[qIdx] === oIdx ? 'selected' : ''}" data-val="${oIdx}">
+            ${opt}
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    block.querySelectorAll('.survey-choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        block.querySelectorAll('.survey-choice-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        const val = parseInt(btn.getAttribute('data-val'), 10);
+        appState.nuxData.phq9Scores[qIdx] = val;
+        playSound(AUDIO.boopty);
+      });
+    });
+
+    container.appendChild(block);
+  });
+}
+
+function setupHatchStage() {
+  eggWarmth = 0;
+  eggHatched = false;
+  const eggImg = document.getElementById('hatch-egg-display');
+  const crackImg = document.getElementById('hatch-crack-display');
+  const warmthFill = document.getElementById('warmth-fill');
+  const warmthBar = document.getElementById('warmth-progress-bar');
+  const lottieBox = document.getElementById('hatch-lottie-container');
+  const nextBtn = document.getElementById('nux-btn-6');
+  const title = document.getElementById('hatch-title');
+  const desc = document.getElementById('hatch-desc');
+  const wrapper = document.getElementById('hatch-egg-wrapper');
+
+  if (eggImg) eggImg.src = 'assets/images/' + appState.nuxData.chosenEgg;
+  if (crackImg) crackImg.style.display = 'none';
+  if (warmthFill) warmthFill.style.width = '0%';
+  if (warmthBar) warmthBar.style.display = 'block';
+  if (lottieBox) {
+    lottieBox.style.display = 'none';
+    lottieBox.innerHTML = '';
+  }
+  if (wrapper) wrapper.style.display = 'flex';
+  if (nextBtn) nextBtn.style.display = 'none';
+  if (title) title.textContent = 'Согрейте яйцо';
+  if (desc) desc.textContent = 'Нажимайте на яйцо, чтобы согреть его теплом своих мыслей!';
+}
+
+function warmEgg() {
+  if (eggHatched) return;
+
+  eggWarmth = Math.min(100, eggWarmth + 20);
+  const warmthFill = document.getElementById('warmth-fill');
+  const crackImg = document.getElementById('hatch-crack-display');
+  const wrapper = document.getElementById('hatch-egg-wrapper');
+
+  if (warmthFill) warmthFill.style.width = eggWarmth + '%';
+
+  // Wobble animation
+  if (wrapper) {
+    wrapper.classList.remove('wobble');
+    void wrapper.offsetWidth;
+    wrapper.classList.add('wobble');
+  }
+
+  if (eggWarmth >= 25 && eggWarmth < 50) {
+    if (crackImg) {
+      crackImg.style.display = 'block';
+      crackImg.src = 'assets/images/egg-crack-1.svg';
+    }
+    playSound(AUDIO.boopty);
+  } else if (eggWarmth >= 50 && eggWarmth < 75) {
+    if (crackImg) {
+      crackImg.style.display = 'block';
+      crackImg.src = 'assets/images/egg-crack-2.svg';
+    }
+    playSound(AUDIO.bubbles);
+  } else if (eggWarmth >= 75 && eggWarmth < 100) {
+    if (crackImg) {
+      crackImg.style.display = 'block';
+      crackImg.src = 'assets/images/egg-crack-3.svg';
+    }
+    playSound(AUDIO.boopty);
+  } else if (eggWarmth >= 100) {
+    triggerEggHatch();
+  } else {
+    playSound(AUDIO.boopty);
+  }
+}
+
+function triggerEggHatch() {
+  eggHatched = true;
+  playSound(AUDIO.hatch);
+
+  const wrapper = document.getElementById('hatch-egg-wrapper');
+  const warmthBar = document.getElementById('warmth-progress-bar');
+  const lottieBox = document.getElementById('hatch-lottie-container');
+  const nextBtn = document.getElementById('nux-btn-6');
+  const title = document.getElementById('hatch-title');
+  const desc = document.getElementById('hatch-desc');
+
+  if (wrapper) wrapper.style.display = 'none';
+  if (warmthBar) warmthBar.style.display = 'none';
+
+  if (lottieBox) {
+    lottieBox.style.display = 'block';
+    if (hatchLottie) hatchLottie.destroy();
+    hatchLottie = lottie.loadAnimation({
+      container: lottieBox,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      path: 'assets/animations/StreakCelebration_Birb_01.json'
+    });
+  }
+
+  if (title) title.textContent = 'Малыш вылупился! 🐣';
+  if (desc) desc.textContent = '«Чирик! Я так рад появиться на свет и встретиться с тобой!»';
+  if (nextBtn) nextBtn.style.display = 'block';
+
+  // Apply chosen theme to pet
+  appState.pet.color = appState.nuxData.chosenTheme;
+  saveState();
+}
+
+function setupNuxEvents() {
+  // Step 1: Intent
+  document.querySelectorAll('#nux-intent-options .nux-option-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('#nux-intent-options .nux-option-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      appState.nuxData.intent = card.getAttribute('data-value');
+      playSound(AUDIO.boopty);
+    });
+  });
+  document.getElementById('nux-btn-1')?.addEventListener('click', () => {
+    playSound(AUDIO.boopty);
+    renderNuxStep(2);
+  });
+
+  // Step 2: GAD-7 Next
+  document.getElementById('nux-btn-2')?.addEventListener('click', () => {
+    playSound(AUDIO.boopty);
+    renderNuxStep(3);
+  });
+
+  // Step 3: PHQ-9 Next
+  document.getElementById('nux-btn-3')?.addEventListener('click', () => {
+    playSound(AUDIO.magic);
+    renderNuxStep(4);
+  });
+
+  // Step 4: Plan Next
+  document.getElementById('nux-btn-4')?.addEventListener('click', () => {
+    playSound(AUDIO.boopty);
+    renderNuxStep(5);
+  });
+
+  // Step 5: Egg cards
+  document.querySelectorAll('.egg-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.egg-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      appState.nuxData.chosenEgg = card.getAttribute('data-egg');
+      appState.nuxData.chosenTheme = card.getAttribute('data-theme');
+      playSound(AUDIO.boopty);
+    });
+  });
+  document.getElementById('nux-btn-5')?.addEventListener('click', () => {
+    playSound(AUDIO.boopty);
+    renderNuxStep(6);
+  });
+
+  // Step 6: Warm Egg
+  document.getElementById('hatch-egg-wrapper')?.addEventListener('click', warmEgg);
+  document.getElementById('nux-btn-6')?.addEventListener('click', () => {
+    playSound(AUDIO.boopty);
+    renderNuxStep(7);
+  });
+
+  // Step 7: Pronouns & Names
+  document.querySelectorAll('.pronoun-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.pronoun-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      appState.pet.pronouns = chip.getAttribute('data-pronoun');
+      playSound(AUDIO.boopty);
+    });
+  });
+
+  document.getElementById('nux-btn-7')?.addEventListener('click', () => {
+    const petName = document.getElementById('nux-pet-name-input')?.value.trim() || 'Бирби';
+    const humanName = document.getElementById('nux-human-name-input')?.value.trim() || 'Друг';
+    appState.pet.name = petName;
+    appState.pet.ownerName = humanName;
+    saveState();
+
+    const speech = document.getElementById('nux-baby-speech');
+    if (speech) {
+      speech.textContent = `«Чирик! Привет, ${humanName}! Я ${petName}, и я так счастлив(а) начать это путешествие вместе с тобой!»`;
+    }
+
+    playSound(AUDIO.chirp);
+    renderNuxStep(8);
+  });
+
+  // Step 8: Finish Onboarding -> Main App
+  document.getElementById('nux-btn-finish')?.addEventListener('click', () => {
+    appState.hasCompletedNux = true;
+    saveState();
+    playSound(AUDIO.bonus);
+
+    const onboardingEl = document.getElementById('onboarding-flow');
+    const mainAppEl = document.getElementById('main-app');
+    onboardingEl.classList.remove('active');
+    mainAppEl.classList.remove('hidden');
+
+    renderAll();
+    initPetLottie();
+    initMrPricklesLottie();
+
+    showSpeechBubble(`Добро пожаловать в домик, ${appState.pet.ownerName}! Я так рад нашему знакомству! 🌿`);
+  });
+
+  // Restart onboarding from Room
+  document.getElementById('restart-onboarding-btn')?.addEventListener('click', () => {
+    playSound(AUDIO.boopty);
+    const onboardingEl = document.getElementById('onboarding-flow');
+    const mainAppEl = document.getElementById('main-app');
+    onboardingEl.classList.add('active');
+    mainAppEl.classList.add('hidden');
+    renderNuxStep(1);
+  });
+}
+
 // ================= UI RENDERERS =================
 function renderAll() {
   renderHUD();
   renderBirdhouse();
   renderGoals();
+  renderFeedGoals();
   renderWardrobe();
   renderShop();
 }
 
 function renderHUD() {
-  document.getElementById('hud-pet-name').textContent = appState.pet.name;
-  document.getElementById('color-label').textContent = appState.pet.color;
-  document.getElementById('streak-val').textContent = appState.pet.streak;
-  document.getElementById('energy-val').textContent = appState.pet.energy;
-  document.getElementById('stones-val').textContent = appState.pet.stones;
+  const nameEl = document.getElementById('hud-pet-name');
+  const subEl = document.getElementById('color-label');
+  const streakEl = document.getElementById('streak-val');
+  const energyEl = document.getElementById('energy-val');
+  const stonesEl = document.getElementById('stones-val');
+
+  if (nameEl) nameEl.textContent = appState.pet.name;
+  if (subEl) subEl.textContent = appState.pet.color;
+  if (streakEl) streakEl.textContent = appState.pet.streak;
+  if (energyEl) energyEl.textContent = appState.pet.energy;
+  if (stonesEl) stonesEl.textContent = appState.pet.stones;
 
   const pct = Math.min(100, Math.round((appState.pet.energy / 30) * 100));
   const bar = document.getElementById('adv-bar-fill');
@@ -174,14 +584,15 @@ function renderBirdhouse() {
   if (lamp) lamp.src = `assets/images/${b.lamp}`;
 
   if (!b.isLightOn) {
-    room.classList.add('night');
-    document.getElementById('light-label').textContent = 'Включить свет';
+    if (room) room.classList.add('night');
+    const lbl = document.getElementById('light-label');
+    if (lbl) lbl.textContent = 'Включить свет';
   } else {
-    room.classList.remove('night');
-    document.getElementById('light-label').textContent = 'Выключить свет';
+    if (room) room.classList.remove('night');
+    const lbl = document.getElementById('light-label');
+    if (lbl) lbl.textContent = 'Выключить свет';
   }
 
-  // Pet color filter
   applyPetColor(appState.pet.color);
 
   // Clothing
@@ -254,6 +665,35 @@ function renderGoals(filter = 'all') {
   });
 }
 
+function renderFeedGoals() {
+  const list = document.getElementById('feed-goals-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  appState.goals.forEach(goal => {
+    const item = document.createElement('div');
+    item.className = 'goal-item' + (goal.completed ? ' done' : '');
+    item.innerHTML = `
+      <div class="goal-left">
+        <img src="assets/icons/${goal.icon}" alt="" class="goal-icon">
+        <div>
+          <div class="goal-title">${goal.title}</div>
+          <div class="goal-reward">+${goal.energy} ⚡  +${goal.stones} 💎</div>
+        </div>
+      </div>
+      <div class="goal-checkbox ${goal.completed ? 'checked' : ''}">
+        ${goal.completed ? '<img src="assets/icons/badge-checkmark.svg" width="14">' : ''}
+      </div>
+    `;
+
+    item.querySelector('.goal-checkbox').addEventListener('click', () => {
+      toggleGoal(goal.id);
+    });
+
+    list.appendChild(item);
+  });
+}
+
 function toggleGoal(id) {
   const goal = appState.goals.find(g => g.id === id);
   if (!goal) return;
@@ -268,6 +708,36 @@ function toggleGoal(id) {
   saveState();
   renderHUD();
   renderGoals();
+  renderFeedGoals();
+}
+
+// ================= MOOD CHECK-IN =================
+const MOOD_RESPONSES = {
+  great: 'Какая радость! Запомни это чудесное ощущение гармонии и тепла! 🌟',
+  good: 'Здорово! Пусть этот день подарит тебе ещё много приятных улыбок! 🌿',
+  okay: 'Спокойный и ровный день — это замечательно. Двигайся в своём комфортном темпе! ☁️',
+  meh: 'Бывают дни затишья. Позволь себе передохнуть и не требуй от себя многого ☕',
+  bad: 'Мне очень жаль, что сейчас трудно... Я рядом с тобой. Мы справимся со всем вместе 🫂'
+};
+
+function setupMoodCheckin() {
+  document.querySelectorAll('#mood-emojis-row .mood-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mood = btn.getAttribute('data-mood');
+      appState.pet.todayMood = mood;
+      appState.pet.stones += 20;
+      saveState();
+
+      playSound(AUDIO.chirp);
+      if (heartsLottie) heartsLottie.goToAndPlay(0, true);
+
+      document.querySelectorAll('#mood-emojis-row .mood-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+
+      renderHUD();
+      showSpeechBubble(MOOD_RESPONSES[mood] || 'Спасибо, что делитесь своими чувствами!');
+    });
+  });
 }
 
 // ================= WARDROBE =================
@@ -317,7 +787,7 @@ function renderWardrobe() {
       });
       hatsGrid.appendChild(el);
     });
-    hatsGrid.firstElementChild.addEventListener('click', () => {
+    hatsGrid.firstElementChild?.addEventListener('click', () => {
       appState.pet.activeHat = '';
       saveState();
       renderBirdhouse();
@@ -349,7 +819,7 @@ function renderWardrobe() {
       });
       glassesGrid.appendChild(el);
     });
-    glassesGrid.firstElementChild.addEventListener('click', () => {
+    glassesGrid.firstElementChild?.addEventListener('click', () => {
       appState.pet.activeGlasses = '';
       saveState();
       renderBirdhouse();
@@ -380,7 +850,7 @@ function renderWardrobe() {
   }
 }
 
-// ================= SHOP =================
+// ================= SHOP (MR. PRICKLES) =================
 const SHOP_ITEMS = [
   { id: 'shop-bed-gothic', name: 'Готическая кровать', slot: 'bed', asset: 'gothic-bed.svg', icon: 'gothic-bed-square-icon.svg', price: 150 },
   { id: 'shop-lamp-gothic', name: 'Готическая лампа', slot: 'lamp', asset: 'gothic-lamp.svg', icon: 'gothic-lamp-square-icon.svg', price: 90 },
@@ -426,7 +896,6 @@ function buyItem(item) {
 
   appState.pet.stones -= item.price;
   appState.purchasedItems.push(item.id);
-  // Install immediately in birdhouse
   appState.birdhouse[item.slot] = item.asset;
   playSound(AUDIO.bell);
   saveState();
@@ -454,44 +923,66 @@ function startAdventure() {
   appState.pet.energy -= 30;
   saveState();
   renderHUD();
-  playSound(AUDIO.hatch);
+  playSound(AUDIO.magic);
   showSpeechBubble('Я отправляюсь в путешествие по волшебному лесу! 🎒');
 
   setTimeout(() => {
     showStoryModal();
-  }, 1200);
+  }, 1000);
 }
 
 function showStoryModal() {
   if (!allStories || allStories.length === 0) return;
-  const story = allStories[Math.floor(Math.random() * allStories.length)];
+  const story = allStories[Math.floor(Math.random() * Math.min(allStories.length, 50))];
 
-  document.getElementById('adv-story-title').textContent = story.title || 'История из путешествия';
-  document.getElementById('adv-story-text').textContent = story.text;
-  document.getElementById('adv-story-question').textContent = story.question;
+  const petName = appState.pet.name;
+  const humanName = appState.pet.ownerName;
+
+  const title = story.title || 'Приключение в пути';
+  const prompt = (story.prompt || '').replace(/#HUMAN_NAME/g, humanName).replace(/#PET_NAME/g, petName);
+
+  document.getElementById('adv-story-title').textContent = title;
+  document.getElementById('adv-story-text').textContent = prompt;
+  document.getElementById('adv-story-question').textContent = 'Как поступить?';
 
   const choicesList = document.getElementById('adv-choices-list');
   choicesList.innerHTML = '';
 
-  story.choices.forEach(ch => {
-    const btn = document.createElement('button');
-    btn.className = 'choice-btn';
-    btn.textContent = ch.text;
-    btn.addEventListener('click', () => {
-      // Pick choice
-      playSound(AUDIO.chirp);
-      appState.pet.streak += 1;
-      appState.pet.stones += 40;
-      appState.pet.traits[ch.trait] = (appState.pet.traits[ch.trait] || 0) + 5;
-      saveState();
-      renderHUD();
-      document.getElementById('adventure-modal').classList.remove('open');
-      showSpeechBubble(`${ch.response} (Черта характера: ${ch.trait} +5!)`);
-    });
-    choicesList.appendChild(btn);
+  const c1Text = (story.choice1 || 'Исследовать дальше').replace(/#HUMAN_NAME/g, humanName).replace(/#PET_NAME/g, petName);
+  const c2Text = (story.choice2 || 'Проявить доброту').replace(/#HUMAN_NAME/g, humanName).replace(/#PET_NAME/g, petName);
+
+  const btn1 = document.createElement('button');
+  btn1.className = 'choice-btn';
+  btn1.textContent = c1Text;
+  btn1.addEventListener('click', () => {
+    applyStoryChoice(story.trait1 || 'Curiosity', story.reply1 || 'Это было великолепно, чирик!');
   });
+  choicesList.appendChild(btn1);
+
+  const btn2 = document.createElement('button');
+  btn2.className = 'choice-btn';
+  btn2.textContent = c2Text;
+  btn2.addEventListener('click', () => {
+    applyStoryChoice(story.trait2 || 'Compassion', story.reply2 || 'Спасибо за поддержку, чирик!');
+  });
+  choicesList.appendChild(btn2);
 
   document.getElementById('adventure-modal').classList.add('open');
+}
+
+function applyStoryChoice(trait, reply) {
+  playSound(AUDIO.chirp);
+  appState.pet.streak += 1;
+  appState.pet.stones += 40;
+  appState.pet.traits[trait] = (appState.pet.traits[trait] || 0) + 5;
+  saveState();
+  renderHUD();
+  document.getElementById('adventure-modal').classList.remove('open');
+
+  const petName = appState.pet.name;
+  const humanName = appState.pet.ownerName;
+  const cleanReply = reply.replace(/#HUMAN_NAME/g, humanName).replace(/#PET_NAME/g, petName);
+  showSpeechBubble(`${cleanReply} (${trait} +5!)`);
 }
 
 // ================= BREATHING (4-4-4) =================
@@ -506,9 +997,9 @@ function startBreathingExercise() {
   const timer = document.getElementById('breathe-timer');
   const startBtn = document.getElementById('breathe-start-btn');
 
-  startBtn.style.display = 'none';
+  if (startBtn) startBtn.style.display = 'none';
 
-  let step = 0; // 0: Inhale, 1: Hold, 2: Exhale
+  let step = 0;
   let secondsLeft = 4;
 
   const steps = [
@@ -533,7 +1024,6 @@ function startBreathingExercise() {
         clearInterval(breatheTimerInterval);
         step++;
         if (step >= steps.length) {
-          // Finished cycle!
           playSound(AUDIO.bonus);
           appState.pet.energy = Math.min(appState.pet.maxEnergy, appState.pet.energy + 10);
           appState.pet.stones += 25;
@@ -554,8 +1044,8 @@ function startBreathingExercise() {
 // ================= EVENT LISTENERS =================
 document.addEventListener('DOMContentLoaded', async () => {
   await loadStories();
-  initLotties();
-  renderAll();
+  initOnboarding();
+  setupMoodCheckin();
 
   // Tab switching
   document.querySelectorAll('.nav-tab').forEach(tabBtn => {
@@ -569,18 +1059,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (targetPane) targetPane.classList.add('active');
 
       playSound(AUDIO.boopty);
+
+      if (targetId === 'tab-shop') {
+        initMrPricklesLottie();
+      }
     });
   });
 
   // Pet Petting
-  document.getElementById('pet-stage-box').addEventListener('click', () => {
+  document.getElementById('pet-stage-box')?.addEventListener('click', () => {
     playSound(AUDIO.chirp);
-    heartsLottie.goToAndPlay(0, true);
+    if (heartsLottie) heartsLottie.goToAndPlay(0, true);
     const phrases = [
       'Чирик! Спасибо за любовь и заботу!',
-      'Ты замечательный друг!',
-      'Я так рад проводить этот день вместе!',
-      'Поглаживания заряжают теплом! 💖'
+      'Ты самый замечательный друг!',
+      'Я так рад проводить этот день вместе с тобой!',
+      'Поглаживания заряжают теплом и радостью! 💖'
     ];
     showSpeechBubble(phrases[Math.floor(Math.random() * phrases.length)]);
   });
@@ -591,26 +1085,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     playSound(AUDIO.boopty);
     saveState();
     renderBirdhouse();
-    initLotties();
+    initPetLottie();
     if (!appState.birdhouse.isLightOn) {
-      showSpeechBubble('Тссс... Сладких снов, Бирби отдыхает! 🌙');
+      showSpeechBubble(`Тссс... Сладких снов, ${appState.pet.name} отдыхает! 🌙`);
     } else {
       showSpeechBubble('Доброе утро! Прекрасный день для заботы о себе! ☀️');
     }
   };
 
-  document.getElementById('light-toggle-btn').addEventListener('click', toggleLight);
-  document.getElementById('room-lamp-wrapper').addEventListener('click', toggleLight);
+  document.getElementById('light-toggle-btn')?.addEventListener('click', toggleLight);
+  document.getElementById('room-lamp-wrapper')?.addEventListener('click', toggleLight);
 
   // Sound toggle
-  document.getElementById('sound-btn').addEventListener('click', () => {
+  document.getElementById('sound-btn')?.addEventListener('click', () => {
     appState.soundEnabled = !appState.soundEnabled;
     const icon = document.getElementById('sound-icon');
-    icon.src = appState.soundEnabled ? 'assets/icons/speaker-waves.svg' : 'assets/icons/speaker-muted.svg';
+    if (icon) {
+      icon.src = appState.soundEnabled ? 'assets/icons/speaker-waves.svg' : 'assets/icons/speaker-muted.svg';
+    }
     saveState();
   });
 
-  // Color chips
+  // Color chips in Wardrobe
   document.querySelectorAll('.color-dot').forEach(dot => {
     dot.addEventListener('click', () => {
       document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
@@ -626,15 +1122,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Adventure CTA
-  document.getElementById('start-adventure-btn').addEventListener('click', startAdventure);
+  document.getElementById('start-adventure-btn')?.addEventListener('click', startAdventure);
 
   // Quick Breathe
-  document.getElementById('quick-breathe-btn').addEventListener('click', startBreathingExercise);
-  document.getElementById('breathe-close-btn').addEventListener('click', () => {
+  document.getElementById('quick-breathe-btn')?.addEventListener('click', startBreathingExercise);
+  document.getElementById('breathe-close-btn')?.addEventListener('click', () => {
     if (breatheTimerInterval) clearInterval(breatheTimerInterval);
     document.getElementById('breathe-modal').classList.remove('open');
   });
-  document.getElementById('breathe-start-btn').addEventListener('click', startBreathingExercise);
+  document.getElementById('breathe-start-btn')?.addEventListener('click', startBreathingExercise);
 
   // Goal filters
   document.querySelectorAll('.filter-pill').forEach(pill => {
@@ -646,16 +1142,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Add Goal Modal
-  document.getElementById('add-goal-open-btn').addEventListener('click', () => {
-    document.getElementById('add-goal-modal').classList.add('open');
+  const openAddGoalModal = () => {
+    document.getElementById('add-goal-modal')?.classList.add('open');
+  };
+  document.getElementById('add-goal-open-btn')?.addEventListener('click', openAddGoalModal);
+  document.getElementById('feed-add-goal-btn')?.addEventListener('click', openAddGoalModal);
+
+  document.getElementById('add-goal-close-btn')?.addEventListener('click', () => {
+    document.getElementById('add-goal-modal')?.classList.remove('open');
   });
-  document.getElementById('add-goal-close-btn').addEventListener('click', () => {
-    document.getElementById('add-goal-modal').classList.remove('open');
-  });
-  document.getElementById('save-goal-btn').addEventListener('click', () => {
+
+  document.getElementById('save-goal-btn')?.addEventListener('click', () => {
     const input = document.getElementById('new-goal-input');
-    const cat = document.getElementById('new-goal-category').value;
-    const val = input.value.trim();
+    const cat = document.getElementById('new-goal-category')?.value || 'selfCare';
+    const val = input ? input.value.trim() : '';
     if (!val) return;
 
     appState.goals.push({
@@ -670,16 +1170,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     input.value = '';
     saveState();
     renderGoals();
-    document.getElementById('add-goal-modal').classList.remove('open');
+    renderFeedGoals();
+    document.getElementById('add-goal-modal')?.classList.remove('open');
     showSpeechBubble('Новая цель добавлена! Вперёд к заботе о себе!');
   });
 
-  // Good vibes
+  // Good vibes (Tree Town)
   document.querySelectorAll('.btn-good-vibes').forEach(btn => {
     btn.addEventListener('click', () => {
       const friend = btn.getAttribute('data-friend');
       playSound(AUDIO.magic);
-      heartsLottie.goToAndPlay(0, true);
+      if (heartsLottie) heartsLottie.goToAndPlay(0, true);
       appState.pet.stones += 10;
       saveState();
       renderHUD();

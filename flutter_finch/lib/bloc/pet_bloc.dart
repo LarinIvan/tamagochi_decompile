@@ -11,6 +11,13 @@ abstract class PetEvent extends Equatable {
 
 class PetPettingTapped extends PetEvent {}
 class PetToggleLightSwitch extends PetEvent {}
+class PetNameChanged extends PetEvent {
+  final String name;
+  const PetNameChanged(this.name);
+  @override
+  List<Object?> get props => [name];
+}
+
 class PetColorChanged extends PetEvent {
   final String colorTheme;
   const PetColorChanged(this.colorTheme);
@@ -80,6 +87,12 @@ class PetBloc extends Bloc<PetEvent, PetState> {
     on<PetPettingTapped>((event, emit) {
       emit(state.copyWith(
         speechMessage: 'Чирик! Спасибо за заботу и тепло!',
+      ));
+    });
+
+    on<PetNameChanged>((event, emit) {
+      emit(state.copyWith(
+        pet: state.pet.copyWith(name: event.name),
       ));
     });
 

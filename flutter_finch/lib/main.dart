@@ -6,6 +6,7 @@ import 'bloc/goals_bloc.dart';
 import 'bloc/shop_bloc.dart';
 import 'models/pet.dart';
 import 'models/birdhouse.dart';
+import 'screens/nux_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,9 +52,20 @@ class FinchMainScaffold extends StatefulWidget {
 
 class _FinchMainScaffoldState extends State<FinchMainScaffold> {
   int _currentIndex = 0;
+  bool _hasCompletedNux = false;
 
   @override
   Widget build(BuildContext context) {
+    if (!_hasCompletedNux) {
+      return NuxScreen(
+        onComplete: () {
+          setState(() {
+            _hasCompletedNux = true;
+          });
+        },
+      );
+    }
+
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
@@ -325,10 +337,133 @@ class FinchHomeScreen extends StatelessWidget {
                   label: Text('Отправить в приключение (${state.pet.energy}/30 ⚡)'),
                 ),
               ),
+
+              const SizedBox(height: 16),
+
+              // Mood Check-in Card
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Как вы себя чувствуете сейчас?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2C3E50))),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(10)),
+                          child: const Text('+20 💎', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF4A7C59))),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildMoodBtn(context, 'assets/icons/bird-heart-eyes.svg', 'Отлично', 'Замечательно! Запомни это светлое чувство! 🌟'),
+                        _buildMoodBtn(context, 'assets/icons/bird-baby.svg', 'Хорошо', 'Здорово! Пусть день продолжает радовать! 🌿'),
+                        _buildMoodBtn(context, 'assets/icons/bird-head-side.svg', 'Норма', 'Спокойный день — это прекрасно! ☁️'),
+                        _buildMoodBtn(context, 'assets/icons/batfinch-head-calm.svg', 'Так себе', 'Позволь себе отдохнуть и не спешить ☕'),
+                        _buildMoodBtn(context, 'assets/icons/big-sweat-drop.svg', 'Тяжело', 'Я рядом. Мы справимся со всем вместе 🫂'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Feed Goals Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Цели заботы на сегодня', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2C3E50))),
+                    Text('${context.watch<GoalsBloc>().state.goals.where((g) => g.isCompleted).length}/${context.watch<GoalsBloc>().state.goals.length}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Feed Goals Preview
+              BlocBuilder<GoalsBloc, GoalsState>(
+                builder: (context, goalsState) {
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: goalsState.goals.length,
+                    itemBuilder: (context, idx) {
+                      final goal = goalsState.goals[idx];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFF0EBE0)),
+                        ),
+                        child: ListTile(
+                          dense: true,
+                          leading: SvgPicture.asset('assets/icons/${goal.icon}', width: 22),
+                          title: Text(goal.title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, decoration: goal.isCompleted ? TextDecoration.lineThrough : null)),
+                          subtitle: Text('+${goal.energyReward} ⚡  +${goal.rainbowStonesReward} 💎', style: const TextStyle(fontSize: 11, color: Color(0xFFEAA64C), fontWeight: FontWeight.bold)),
+                          trailing: IconButton(
+                            icon: Icon(goal.isCompleted ? Icons.check_circle : Icons.circle_outlined, color: goal.isCompleted ? const Color(0xFF6C9A74) : Colors.grey),
+                            onPressed: () {
+                              context.read<GoalsBloc>().add(ToggleGoalCompleted(goal.id));
+                              if (!goal.isCompleted) {
+                                context.read<PetBloc>().add(PetAddEnergyAndStones(goal.energyReward, goal.rainbowStonesReward));
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildMoodBtn(BuildContext context, String svg, String label, String response) {
+    return GestureDetector(
+      onTap: () {
+        context.read<PetBloc>().add(const PetAddEnergyAndStones(0, 20));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response),
+            backgroundColor: const Color(0xFF6C9A74),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7F4EB),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SvgPicture.asset(svg, width: 28, height: 28),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF555555))),
+        ],
+      ),
     );
   }
 }
