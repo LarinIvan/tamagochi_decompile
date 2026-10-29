@@ -3,6 +3,7 @@ import { StorageService, DEFAULT_COORDS } from './services/storageService';
 import { geoService, GeoMode, GeoState } from './services/geoService';
 import { TerritoryEngine } from './services/territoryEngine';
 import { BotSimulator, INITIAL_BOTS } from './services/botSimulator';
+import { soundService } from './services/soundService';
 import { coordToH3, getDistanceMeters } from './services/h3Engine';
 import { UserProfile, Dog } from './types/user';
 import { BaseMapProvider, HexCell, Coordinates, ActiveWalk, WalkTrackPoint } from './types/map';
@@ -24,6 +25,7 @@ import { WalkSummaryModal } from './components/HUD/WalkSummaryModal';
 import { HazardAlertBanner } from './components/Safety/HazardAlertBanner';
 import { TerritoryStatusCard } from './components/HUD/TerritoryStatusCard';
 import { GameGuideModal } from './components/HUD/GameGuideModal';
+import { LeaderboardModal } from './components/HUD/LeaderboardModal';
 
 export const App: React.FC = () => {
   // 1. Состояние профиля и питомцев
@@ -69,6 +71,7 @@ export const App: React.FC = () => {
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [lastCompletedWalk, setLastCompletedWalk] = useState<ActiveWalk | null>(null);
 
   // 6. Уведомления и алерты опасности
@@ -137,6 +140,7 @@ export const App: React.FC = () => {
 
           if (captureRes.isNewCapture && !newHexesCaptured.includes(cellId)) {
             newHexesCaptured.push(cellId);
+            soundService.playHexCapture();
             showToast(captureRes.message);
           }
 
@@ -144,6 +148,7 @@ export const App: React.FC = () => {
           const loopRes = TerritoryEngine.processLoopEnclosure(newPoints, selectedDog, captureRes.updatedHexes);
           if (loopRes.enclosedCount > 0) {
             earnedBones += loopRes.bonesEarned;
+            soundService.playLoopEnclosed();
             showToast(loopRes.message || '🔄 Контур квартала замкнут!');
           }
 
@@ -164,15 +169,18 @@ export const App: React.FC = () => {
       let foundHazard: HazardMarker | null = null;
       let minHazardDist = 999999;
 
-      hazards.forEach((h) => {
+      for (const h of hazards) {
         const d = getDistanceMeters(nextCoords.lat, nextCoords.lng, h.lat, h.lng);
         if (d <= 60 && d < minHazardDist) {
           minHazardDist = d;
           foundHazard = h;
         }
-      });
+      }
 
       if (foundHazard) {
+        if ((activeAlertHazard as HazardMarker | null)?.id !== foundHazard.id) {
+          soundService.playHazardWarning();
+        }
         setActiveAlertHazard(foundHazard);
         setAlertDistanceMeters(minHazardDist);
       } else {
@@ -346,6 +354,7 @@ export const App: React.FC = () => {
         onOpenProfile={() => setIsUserProfileModalOpen(true)}
         onOpenHazardModal={() => setIsHazardModalOpen(true)}
         onOpenSosModal={() => setIsSosModalOpen(true)}
+        onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
         onSelectDog={(id) => setProfile({ ...profile, selectedDogId: id })}
       />
 
@@ -506,6 +515,15 @@ export const App: React.FC = () => {
       <GameGuideModal
         isOpen={isGuideModalOpen}
         onClose={() => setIsGuideModalOpen(false)}
+      />
+
+      {/* Лидерборд района (Рейтинг собак ЖК) */}
+      <LeaderboardModal
+        isOpen={isLeaderboardOpen}
+        onClose={() => setIsLeaderboardOpen(false)}
+        playerDog={selectedDog}
+        bots={bots}
+        ownerName={profile.name}
       />
     </div>
   );

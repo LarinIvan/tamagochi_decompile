@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Siren, AlertTriangle, Bone, ChevronDown } from 'lucide-react';
+import { User, Siren, AlertTriangle, Bone, ChevronDown, Trophy } from 'lucide-react';
 import { UserProfile, Dog } from '../../types/user';
 import { BaseMapProvider } from '../../types/map';
 import { LayerSwitch } from '../Map/LayerSwitch';
@@ -12,6 +12,7 @@ interface TopBarProps {
   onOpenProfile: () => void;
   onOpenHazardModal: () => void;
   onOpenSosModal: () => void;
+  onOpenLeaderboard: () => void;
   onSelectDog: (dogId: string) => void;
 }
 
@@ -23,6 +24,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenProfile,
   onOpenHazardModal,
   onOpenSosModal,
+  onOpenLeaderboard,
   onSelectDog
 }) => {
   return (
@@ -81,8 +83,18 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
       </div>
 
-      {/* Правая часть: Смена карты, кнопка Опасность и SOS */}
+      {/* Правая часть: Лидерборд, Смена карты, кнопка Опасность и SOS */}
       <div className="flex items-center gap-2 pointer-events-auto">
+        {/* Кнопка Лидерборда района */}
+        <button
+          onClick={onOpenLeaderboard}
+          className="flex items-center gap-1.5 px-3 py-2 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 hover:bg-amber-950/40 hover:border-amber-500/60 rounded-xl text-xs font-bold text-amber-400 shadow-xl transition-all active:scale-95"
+          title="Лидерборд района (Рейтинг собак)"
+        >
+          <Trophy className="w-4 h-4" />
+          <span className="hidden lg:inline">Топ ЖК</span>
+        </button>
+
         {/* Переключатель слоев карт */}
         <LayerSwitch currentProvider={currentProvider} onSelectProvider={onSelectProvider} />
 

@@ -21,6 +21,9 @@ export interface BotDog {
   targetLng?: number;
   isWalking: boolean;
   speedKmh: number;
+  totalHexes?: number;
+  totalKm?: number;
+  rank?: string;
 }
 
 export interface DevModeSettings {

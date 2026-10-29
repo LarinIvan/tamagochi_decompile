@@ -122,6 +122,10 @@ export const HexMap: React.FC<HexMapProps> = ({
     mapInstanceRef.current = map;
 
     return () => {
+      if (playerMarkerRef.current) {
+        playerMarkerRef.current.remove();
+        playerMarkerRef.current = null;
+      }
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -211,25 +215,34 @@ export const HexMap: React.FC<HexMapProps> = ({
 
     // Крупная круглая фото-аватарка собаки с неоновым кольцом и кличкой
     const iconHtml = `
-      <div class="relative flex flex-col items-center cursor-pointer select-none" style="width: 64px; height: 80px;">
+      <div class="relative flex flex-col items-center cursor-pointer select-none" style="width: 68px; height: 86px;">
         <!-- Пульсирующий ореол поводка -->
-        <div class="absolute top-0 w-16 h-16 rounded-full marker-pulse pointer-events-none" style="background: ${leashInfo.bgColor}; opacity: 0.4; filter: blur(6px);"></div>
+        <div class="absolute top-0 w-16 h-16 rounded-full marker-pulse pointer-events-none" style="background: ${leashInfo.bgColor}; opacity: 0.5; filter: blur(6px);"></div>
         
         <!-- Круглая рамка с фото собаки -->
-        <div class="relative w-14 h-14 rounded-full p-0.5 shadow-2xl flex items-center justify-center transition-transform hover:scale-110" style="background: linear-gradient(135deg, ${factionInfo.borderColor}, ${leashInfo.bgColor}); box-shadow: 0 0 20px ${factionInfo.borderColor};">
-          <div class="w-full h-full rounded-full overflow-hidden border-2 border-slate-900 bg-slate-950">
-            <img src="${playerDog.avatarUrl}" alt="${playerDog.name}" class="w-full h-full object-cover" />
+        <div class="relative w-16 h-16 rounded-full p-1 shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95" style="background: linear-gradient(135deg, ${factionInfo.borderColor}, ${leashInfo.bgColor}); box-shadow: 0 0 20px ${leashInfo.bgColor};">
+          <div class="w-full h-full rounded-full overflow-hidden border-2 border-slate-900 bg-slate-950 flex items-center justify-center">
+            <img 
+              src="${playerDog.avatarUrl || ''}" 
+              alt="${playerDog.name}" 
+              class="w-full h-full object-cover" 
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            />
+            <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center; background:#0f172a; color:#38bdf8; font-size:24px; font-weight:bold;">
+              🐶
+            </div>
           </div>
           <!-- Иконка маркера/породы -->
-          <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-xs shadow-md">
+          <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-slate-900 border-2 border-sky-400 flex items-center justify-center text-xs shadow-md">
             ${markerStyle.icon}
           </div>
         </div>
 
         <!-- Плашка с кличкой под собакой -->
-        <div class="mt-1 px-2 py-0.5 rounded-lg bg-slate-950/95 border border-sky-400 text-white font-black text-[10px] whitespace-nowrap shadow-2xl flex items-center gap-1">
+        <div class="mt-1 px-2.5 py-0.5 rounded-full bg-slate-950/95 border border-sky-400 text-white font-black text-[10px] whitespace-nowrap shadow-2xl flex items-center gap-1 backdrop-blur-sm">
           <span class="w-1.5 h-1.5 rounded-full animate-ping" style="background: ${leashInfo.bgColor};"></span>
-          ${playerDog.name} (Вы)
+          <span>${playerDog.name}</span>
+          <span class="text-sky-400 text-[9px] font-extrabold">(Вы)</span>
         </div>
       </div>
     `;
@@ -237,12 +250,18 @@ export const HexMap: React.FC<HexMapProps> = ({
     const icon = L.divIcon({
       html: iconHtml,
       className: 'custom-player-avatar-marker',
-      iconSize: [64, 80],
-      iconAnchor: [32, 32]
+      iconSize: [68, 86],
+      iconAnchor: [34, 34]
     });
 
-    if (!playerMarkerRef.current) {
-      playerMarkerRef.current = L.marker([playerCoords.lat, playerCoords.lng], { icon, zIndexOffset: 2000 }).addTo(map);
+    if (!playerMarkerRef.current || !map.hasLayer(playerMarkerRef.current)) {
+      if (playerMarkerRef.current) {
+        playerMarkerRef.current.remove();
+      }
+      playerMarkerRef.current = L.marker([playerCoords.lat, playerCoords.lng], {
+        icon,
+        zIndexOffset: 10000
+      }).addTo(map);
       playerMarkerRef.current.on('click', () => {
         onSelectDogCard(playerDog);
       });
@@ -271,8 +290,16 @@ export const HexMap: React.FC<HexMapProps> = ({
         <div class="relative flex flex-col items-center cursor-pointer hover:scale-110 transition-transform select-none" style="width: 50px; height: 65px;">
           <!-- Фото бота в рамке цвета поводка -->
           <div class="w-11 h-11 rounded-full p-0.5 shadow-xl flex items-center justify-center" style="background: ${leashInfo.bgColor}; box-shadow: 0 0 10px ${factionInfo.borderColor}88;">
-            <div class="w-full h-full rounded-full overflow-hidden border border-slate-900 bg-slate-900">
-              <img src="${bot.avatarUrl}" alt="${bot.name}" class="w-full h-full object-cover" />
+            <div class="w-full h-full rounded-full overflow-hidden border border-slate-900 bg-slate-900 flex items-center justify-center">
+              <img 
+                src="${bot.avatarUrl || ''}" 
+                alt="${bot.name}" 
+                class="w-full h-full object-cover" 
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+              />
+              <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center; background:#1e293b; color:#cbd5e1; font-size:18px;">
+                🐕
+              </div>
             </div>
           </div>
           <!-- Кличка бота -->
@@ -359,13 +386,16 @@ export const HexMap: React.FC<HexMapProps> = ({
     }
   }, [walkPoints, isWalking]);
 
-  // Функция центрирования карты на собаке
+  // Функция центрирования и приближения к собаке
   const handleCenterOnPlayer = () => {
     if (!mapInstanceRef.current) return;
     setAutoFollow(true);
-    mapInstanceRef.current.flyTo([playerCoords.lat, playerCoords.lng], 17, {
+    const currentZoom = mapInstanceRef.current.getZoom();
+    // Приближаем до детального уровня двора (зум 18 или 19)
+    const targetZoom = currentZoom < 18 ? 18 : (currentZoom === 18 ? 19 : 18);
+    mapInstanceRef.current.flyTo([playerCoords.lat, playerCoords.lng], targetZoom, {
       animate: true,
-      duration: 1.0
+      duration: 0.8
     });
   };
 
