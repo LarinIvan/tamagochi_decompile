@@ -30,3 +30,6 @@ fscache2/
 
 # Ghidra 12.1.4 (backup copy, main Ghidra 12.2 is in ghidra/)
 ghidra_12.1.4/
+
+*.apk
+*.apk.idsig
