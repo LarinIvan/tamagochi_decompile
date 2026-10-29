@@ -12,6 +12,7 @@ export const LayerSwitch: React.FC<LayerSwitchProps> = ({
   onSelectProvider
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const currentInfo = MAP_PROVIDERS[currentProvider] || MAP_PROVIDERS.carto_dark;
 
   return (
     <div className="relative">
@@ -21,8 +22,8 @@ export const LayerSwitch: React.FC<LayerSwitchProps> = ({
         title="Сменить подложку карты"
       >
         <Layers className="w-4 h-4 text-sky-400" />
-        <span className="hidden sm:inline">{MAP_PROVIDERS[currentProvider].name}</span>
-        <span className="sm:hidden">{MAP_PROVIDERS[currentProvider].icon}</span>
+        <span className="hidden sm:inline">{currentInfo.name}</span>
+        <span className="sm:hidden">{currentInfo.icon}</span>
       </button>
 
       {isOpen && (

@@ -1,5 +1,5 @@
 import { UserProfile, Dog } from '../types/user';
-import { HexCell, BaseMapProvider, Coordinates } from '../types/map';
+import { HexCell, BaseMapProvider, Coordinates, MAP_PROVIDERS } from '../types/map';
 import { HazardMarker, SosAlert } from '../types/safety';
 import { coordToH3, getNeighborH3Cells } from './h3Engine';
 
@@ -92,7 +92,11 @@ export const StorageService = {
   },
 
   getBaseMap(): BaseMapProvider {
-    return (localStorage.getItem(STORAGE_KEYS.BASE_MAP) as BaseMapProvider) || 'carto_dark';
+    const saved = localStorage.getItem(STORAGE_KEYS.BASE_MAP) as BaseMapProvider;
+    if (saved && MAP_PROVIDERS[saved]) {
+      return saved;
+    }
+    return 'carto_dark';
   },
 
   saveBaseMap(provider: BaseMapProvider): void {
