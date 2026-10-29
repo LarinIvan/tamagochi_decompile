@@ -6,7 +6,7 @@ import { BaseMapProvider, Coordinates, HexCell, MAP_PROVIDERS, WalkTrackPoint } 
 import { Dog, FACTIONS, LEASH_COLORS, MARKER_STYLES } from '../../types/user';
 import { BotDog } from '../../types/simulation';
 import { HazardMarker, HAZARD_CONFIGS } from '../../types/safety';
-import { getH3Boundary } from '../../services/h3Engine';
+import { getH3Boundary, coordToH3, getNeighborH3Cells } from '../../services/h3Engine';
 
 // Кастомный слой тайлов для Яндекс.Карт с математической коррекцией эллипсоидальной проекции (EPSG:3395 -> EPSG:3857)
 class YandexCorrectedTileLayer extends L.TileLayer {
@@ -160,12 +160,51 @@ export const HexMap: React.FC<HexMapProps> = ({
     tileLayerRef.current = newLayer;
   }, [currentProvider]);
 
-  // 3. Обновление полигонов гексагонов Uber H3
+  // Текущий центральный H3 индекс для фоновой сотовой сетки
+  const playerCenterHex = coordToH3(playerCoords.lat, playerCoords.lng);
+
+  // 3. Обновление полигонов гексагонов Uber H3 (Нейтральная сетка + Захваченные соты)
   useEffect(() => {
     if (!hexLayerGroupRef.current) return;
     const group = hexLayerGroupRef.current;
     group.clearLayers();
 
+    // 1. Отрисовка фоновой сетки нейтральных сот района (k-ring = 3 вокруг игрока)
+    // Это создает ощущение цельного пчелиного улья/радара, где все ячейки ровно стыкуются друг с другом
+    const nearbyGrid = getNeighborH3Cells(playerCenterHex, 3);
+    nearbyGrid.forEach((h3Idx) => {
+      // Если ячейка уже захвачена, пропускаем (её отрисует блок ниже с цветом фракции)
+      if (hexCells[h3Idx]) return;
+
+      const boundary = getH3Boundary(h3Idx);
+      if (boundary.length === 0) return;
+
+      const neutralPolygon = L.polygon(boundary, {
+        color: '#64748b',
+        weight: 1,
+        fillColor: '#38bdf8',
+        fillOpacity: 0.04,
+        dashArray: '3, 6',
+        lineJoin: 'round',
+        lineCap: 'round'
+      });
+
+      neutralPolygon.bindPopup(`
+        <div style="font-family: inherit; font-size: 12px; color: #0f172a; min-width: 160px;">
+          <div style="font-weight: 800; font-size: 13px; color: #475569; margin-bottom: 2px;">
+            ⚪ Свободная сота двора
+          </div>
+          <div style="color: #64748b; font-size: 11px;">Здесь ещё никто не пометил территорию.</div>
+          <div style="font-size: 10px; color: #0284c7; font-weight: 700; margin-top: 6px;">
+            🐾 Прогуляйтесь здесь с ${playerDog.name}, чтобы закрасить соту!
+          </div>
+        </div>
+      `);
+
+      group.addLayer(neutralPolygon);
+    });
+
+    // 2. Отрисовка захваченных сот фракций
     Object.values(hexCells).forEach((cell) => {
       const boundary = getH3Boundary(cell.h3Index);
       if (boundary.length === 0) return;
@@ -176,10 +215,12 @@ export const HexMap: React.FC<HexMapProps> = ({
 
       const polygon = L.polygon(boundary, {
         color: borderColor,
-        weight: cell.isFortified ? 3 : 1.4,
+        weight: cell.isFortified ? 3.5 : 1.8,
         fillColor: fillColor,
-        fillOpacity: cell.isFortified ? 0.65 : 0.35,
-        dashArray: cell.isFortified ? undefined : '2, 4'
+        fillOpacity: cell.isFortified ? 0.65 : 0.38,
+        dashArray: cell.isFortified ? undefined : '2, 4',
+        lineJoin: 'round',
+        lineCap: 'round'
       });
 
       const fortifiedBadge = cell.isFortified
@@ -202,7 +243,7 @@ export const HexMap: React.FC<HexMapProps> = ({
 
       group.addLayer(polygon);
     });
-  }, [hexCells]);
+  }, [hexCells, playerCenterHex, playerDog]);
 
   // 4. Обновление маркера игрока (КРАСИВАЯ АВАТАРКА ПИТОМЦА)
   useEffect(() => {
