@@ -22,6 +22,8 @@ import { HazardModal } from './components/Safety/HazardModal';
 import { SosModal } from './components/Safety/SosModal';
 import { WalkSummaryModal } from './components/HUD/WalkSummaryModal';
 import { HazardAlertBanner } from './components/Safety/HazardAlertBanner';
+import { TerritoryStatusCard } from './components/HUD/TerritoryStatusCard';
+import { GameGuideModal } from './components/HUD/GameGuideModal';
 
 export const App: React.FC = () => {
   // 1. Состояние профиля и питомцев
@@ -66,6 +68,7 @@ export const App: React.FC = () => {
   const [isHazardModalOpen, setIsHazardModalOpen] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
   const [lastCompletedWalk, setLastCompletedWalk] = useState<ActiveWalk | null>(null);
 
   // 6. Уведомления и алерты опасности
@@ -346,6 +349,14 @@ export const App: React.FC = () => {
         onSelectDog={(id) => setProfile({ ...profile, selectedDogId: id })}
       />
 
+      {/* 2.5. Виджет текущего сектора и битвы за район */}
+      <TerritoryStatusCard
+        playerCoords={playerCoords}
+        hexCells={hexCells}
+        playerDog={selectedDog}
+        onOpenGuide={() => setIsGuideModalOpen(true)}
+      />
+
       {/* 3. Нижняя панель выгула (HUD WalkBar) */}
       <WalkBar
         dog={selectedDog}
@@ -490,6 +501,12 @@ export const App: React.FC = () => {
           dog={selectedDog}
         />
       )}
+
+      {/* Обучающее окно: Смысл игры и захват района */}
+      <GameGuideModal
+        isOpen={isGuideModalOpen}
+        onClose={() => setIsGuideModalOpen(false)}
+      />
     </div>
   );
 };

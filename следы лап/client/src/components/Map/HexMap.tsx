@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Crosshair, Navigation2 } from 'lucide-react';
 import { BaseMapProvider, Coordinates, HexCell, MAP_PROVIDERS, WalkTrackPoint } from '../../types/map';
 import { Dog, FACTIONS, LEASH_COLORS, MARKER_STYLES } from '../../types/user';
 import { BotDog } from '../../types/simulation';
@@ -14,11 +15,9 @@ class YandexCorrectedTileLayer extends L.TileLayer {
     const x = coords.x;
     const ySpherical = coords.y;
 
-    // 1. Вычисляем точную географическую широту тайла в Spherical Mercator
     const n = Math.PI - (2 * Math.PI * ySpherical) / Math.pow(2, z);
     const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 
-    // 2. Преобразуем широту в эллипсоидальный Y для Яндекс WGS-84 (EPSG:3395)
     const a = 6378137;
     const b = 6356752.3142;
     const e = Math.sqrt(1 - (b * b) / (a * a));
@@ -83,7 +82,10 @@ export const HexMap: React.FC<HexMapProps> = ({
   // Линия трека выгула
   const trackPolylineRef = useRef<L.Polyline | null>(null);
 
-  // 1. Инициализация карты (один раз)
+  // Авто-следование за собакой
+  const [autoFollow, setAutoFollow] = useState(true);
+
+  // 1. Инициализация карты
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -97,14 +99,18 @@ export const HexMap: React.FC<HexMapProps> = ({
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Группы слоев
+    // При ручном сдвиге карты пользователем временно отключаем авто-следование
+    map.on('dragstart', () => {
+      setAutoFollow(false);
+    });
+
     hexLayerGroupRef.current = L.layerGroup().addTo(map);
     botsLayerGroupRef.current = L.layerGroup().addTo(map);
     hazardsLayerGroupRef.current = L.layerGroup().addTo(map);
 
     trackPolylineRef.current = L.polyline([], {
       color: '#38bdf8',
-      weight: 4,
+      weight: 5,
       dashArray: '4, 8',
       opacity: 0.85
     }).addTo(map);
@@ -134,13 +140,11 @@ export const HexMap: React.FC<HexMapProps> = ({
     let newLayer: L.TileLayer;
 
     if (config.isYandex) {
-      // Яндекс с коррекцией эллипсоида
       newLayer = new YandexCorrectedTileLayer(config.url, {
         attribution: config.attribution,
         maxZoom: config.maxZoom
       });
     } else {
-      // Стандартные тайлы Spherical Mercator
       newLayer = L.tileLayer(config.url, {
         attribution: config.attribution,
         maxZoom: config.maxZoom,
@@ -168,19 +172,27 @@ export const HexMap: React.FC<HexMapProps> = ({
 
       const polygon = L.polygon(boundary, {
         color: borderColor,
-        weight: cell.isFortified ? 2.5 : 1.2,
+        weight: cell.isFortified ? 3 : 1.4,
         fillColor: fillColor,
-        fillOpacity: cell.isFortified ? 0.6 : 0.35,
+        fillOpacity: cell.isFortified ? 0.65 : 0.35,
         dashArray: cell.isFortified ? undefined : '2, 4'
       });
 
-      const fortifiedBadge = cell.isFortified ? '<span style="color:#facc15"> ★ Закрытый двор (Защита)</span>' : '';
+      const fortifiedBadge = cell.isFortified
+        ? '<div style="color:#facc15; font-weight: bold; margin-top: 4px;">★ ЗАКРЫТЫЙ ДВОР (+100 SP броня)</div>'
+        : '';
+
       polygon.bindPopup(`
-        <div style="font-family: inherit; font-size: 12px; color: #0f172a; min-width: 140px;">
-          <div style="font-weight: 700; margin-bottom: 2px;">${factionInfo?.name || 'Нейтральная сота'}</div>
-          <div>Хозяин: <b>${cell.ownerDogName || 'Ничейная'}</b></div>
+        <div style="font-family: inherit; font-size: 12px; color: #0f172a; min-width: 160px;">
+          <div style="font-weight: 800; font-size: 13px; color: ${borderColor}; margin-bottom: 2px;">
+            ${factionInfo?.symbol} ${factionInfo?.name || 'Нейтральная сота'}
+          </div>
+          <div>Хозяин двора: <b>${cell.ownerDogName || 'Ничейная'}</b></div>
           <div>Запах (SP): <b>${cell.scentPoints} / 300</b></div>
           ${fortifiedBadge}
+          <div style="font-size: 10px; color: #64748b; margin-top: 6px;">
+            Пройдите через соту, чтобы закрасить в цвет своей стаи!
+          </div>
         </div>
       `);
 
@@ -188,33 +200,49 @@ export const HexMap: React.FC<HexMapProps> = ({
     });
   }, [hexCells]);
 
-  // 4. Обновление маркера игрока
+  // 4. Обновление маркера игрока (КРАСИВАЯ АВАТАРКА ПИТОМЦА)
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
 
     const leashInfo = LEASH_COLORS[playerDog.leashColor] || LEASH_COLORS.green;
+    const factionInfo = FACTIONS[playerDog.faction] || FACTIONS.sprinters;
     const markerStyle = MARKER_STYLES.find((m) => m.id === playerDog.markerStyle) || MARKER_STYLES[0];
 
+    // Крупная круглая фото-аватарка собаки с неоновым кольцом и кличкой
     const iconHtml = `
-      <div class="relative flex items-center justify-center cursor-pointer marker-pulse" style="width: 44px; height: 44px;">
-        <div class="absolute inset-0 rounded-full" style="background: ${leashInfo.bgColor}; opacity: 0.35; filter: blur(4px);"></div>
-        <div class="relative w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-2xl border-2" style="background: #0f172a; border-color: ${leashInfo.bgColor};">
-          ${markerStyle.icon}
+      <div class="relative flex flex-col items-center cursor-pointer select-none" style="width: 64px; height: 80px;">
+        <!-- Пульсирующий ореол поводка -->
+        <div class="absolute top-0 w-16 h-16 rounded-full marker-pulse pointer-events-none" style="background: ${leashInfo.bgColor}; opacity: 0.4; filter: blur(6px);"></div>
+        
+        <!-- Круглая рамка с фото собаки -->
+        <div class="relative w-14 h-14 rounded-full p-0.5 shadow-2xl flex items-center justify-center transition-transform hover:scale-110" style="background: linear-gradient(135deg, ${factionInfo.borderColor}, ${leashInfo.bgColor}); box-shadow: 0 0 20px ${factionInfo.borderColor};">
+          <div class="w-full h-full rounded-full overflow-hidden border-2 border-slate-900 bg-slate-950">
+            <img src="${playerDog.avatarUrl}" alt="${playerDog.name}" class="w-full h-full object-cover" />
+          </div>
+          <!-- Иконка маркера/породы -->
+          <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-xs shadow-md">
+            ${markerStyle.icon}
+          </div>
         </div>
-        <div class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border border-slate-900" style="background: ${leashInfo.bgColor};" title="${leashInfo.label}"></div>
+
+        <!-- Плашка с кличкой под собакой -->
+        <div class="mt-1 px-2 py-0.5 rounded-lg bg-slate-950/95 border border-sky-400 text-white font-black text-[10px] whitespace-nowrap shadow-2xl flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full animate-ping" style="background: ${leashInfo.bgColor};"></span>
+          ${playerDog.name} (Вы)
+        </div>
       </div>
     `;
 
     const icon = L.divIcon({
       html: iconHtml,
-      className: 'custom-player-marker',
-      iconSize: [44, 44],
-      iconAnchor: [22, 22]
+      className: 'custom-player-avatar-marker',
+      iconSize: [64, 80],
+      iconAnchor: [32, 32]
     });
 
     if (!playerMarkerRef.current) {
-      playerMarkerRef.current = L.marker([playerCoords.lat, playerCoords.lng], { icon, zIndexOffset: 1000 }).addTo(map);
+      playerMarkerRef.current = L.marker([playerCoords.lat, playerCoords.lng], { icon, zIndexOffset: 2000 }).addTo(map);
       playerMarkerRef.current.on('click', () => {
         onSelectDogCard(playerDog);
       });
@@ -222,7 +250,12 @@ export const HexMap: React.FC<HexMapProps> = ({
       playerMarkerRef.current.setLatLng([playerCoords.lat, playerCoords.lng]);
       playerMarkerRef.current.setIcon(icon);
     }
-  }, [playerCoords, playerDog]);
+
+    // Авто-следование за собакой
+    if (autoFollow) {
+      map.panTo([playerCoords.lat, playerCoords.lng], { animate: true, duration: 0.3 });
+    }
+  }, [playerCoords, playerDog, autoFollow]);
 
   // 5. Обновление ботов-соседей
   useEffect(() => {
@@ -232,14 +265,18 @@ export const HexMap: React.FC<HexMapProps> = ({
 
     bots.forEach((bot) => {
       const leashInfo = LEASH_COLORS[bot.leashColor] || LEASH_COLORS.yellow;
-      const markerStyle = MARKER_STYLES.find((m) => m.id === bot.markerStyle) || MARKER_STYLES[0];
+      const factionInfo = FACTIONS[bot.faction] || FACTIONS.free;
 
       const botHtml = `
-        <div class="relative flex items-center justify-center cursor-pointer hover:scale-110 transition-transform" style="width: 38px; height: 38px;">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-xl border-2" style="background: #1e293b; border-color: ${leashInfo.bgColor};">
-            ${markerStyle.icon}
+        <div class="relative flex flex-col items-center cursor-pointer hover:scale-110 transition-transform select-none" style="width: 50px; height: 65px;">
+          <!-- Фото бота в рамке цвета поводка -->
+          <div class="w-11 h-11 rounded-full p-0.5 shadow-xl flex items-center justify-center" style="background: ${leashInfo.bgColor}; box-shadow: 0 0 10px ${factionInfo.borderColor}88;">
+            <div class="w-full h-full rounded-full overflow-hidden border border-slate-900 bg-slate-900">
+              <img src="${bot.avatarUrl}" alt="${bot.name}" class="w-full h-full object-cover" />
+            </div>
           </div>
-          <div class="absolute -bottom-1 text-[9px] px-1 bg-slate-900/90 text-slate-200 rounded font-semibold whitespace-nowrap shadow">
+          <!-- Кличка бота -->
+          <div class="mt-0.5 text-[9px] px-1.5 py-0.5 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-md font-bold whitespace-nowrap shadow">
             ${bot.name}
           </div>
         </div>
@@ -247,9 +284,9 @@ export const HexMap: React.FC<HexMapProps> = ({
 
       const botIcon = L.divIcon({
         html: botHtml,
-        className: 'custom-bot-marker',
-        iconSize: [38, 38],
-        iconAnchor: [19, 19]
+        className: 'custom-bot-avatar-marker',
+        iconSize: [50, 65],
+        iconAnchor: [25, 25]
       });
 
       const marker = L.marker([bot.currentLat, bot.currentLng], { icon: botIcon });
@@ -261,7 +298,7 @@ export const HexMap: React.FC<HexMapProps> = ({
     });
   }, [bots]);
 
-  // 6. Обновление меток безопасности (Crowd-Safety)
+  // 6. Обновление меток безопасности
   useEffect(() => {
     if (!hazardsLayerGroupRef.current) return;
     const group = hazardsLayerGroupRef.current;
@@ -271,8 +308,8 @@ export const HexMap: React.FC<HexMapProps> = ({
       const config = HAZARD_CONFIGS[hazard.type] || HAZARD_CONFIGS.glass;
 
       const hazardHtml = `
-        <div class="relative flex items-center justify-center cursor-pointer animate-bounce" style="width: 36px; height: 36px;">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-base shadow-2xl border-2" style="background: ${config.color}; border-color: #f8fafc;">
+        <div class="relative flex items-center justify-center cursor-pointer animate-bounce" style="width: 38px; height: 38px;">
+          <div class="w-9 h-9 rounded-full flex items-center justify-center text-lg shadow-2xl border-2" style="background: ${config.color}; border-color: #f8fafc;">
             ${config.icon}
           </div>
         </div>
@@ -281,8 +318,8 @@ export const HexMap: React.FC<HexMapProps> = ({
       const hazardIcon = L.divIcon({
         html: hazardHtml,
         className: 'custom-hazard-marker',
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
+        iconSize: [38, 38],
+        iconAnchor: [19, 19]
       });
 
       const marker = L.marker([hazard.lat, hazard.lng], { icon: hazardIcon });
@@ -322,5 +359,35 @@ export const HexMap: React.FC<HexMapProps> = ({
     }
   }, [walkPoints, isWalking]);
 
-  return <div ref={mapContainerRef} className="h-full w-full relative z-0" />;
+  // Функция центрирования карты на собаке
+  const handleCenterOnPlayer = () => {
+    if (!mapInstanceRef.current) return;
+    setAutoFollow(true);
+    mapInstanceRef.current.flyTo([playerCoords.lat, playerCoords.lng], 17, {
+      animate: true,
+      duration: 1.0
+    });
+  };
+
+  return (
+    <div className="h-full w-full relative z-0">
+      <div ref={mapContainerRef} className="h-full w-full" />
+
+      {/* Кнопка "Где я? / Центрировать карту на собаке" */}
+      <button
+        onClick={handleCenterOnPlayer}
+        className={`fixed bottom-24 right-20 z-40 p-3 rounded-2xl shadow-2xl border flex items-center gap-1.5 active:scale-95 transition-all ${
+          autoFollow
+            ? 'bg-sky-500 text-slate-950 font-bold border-sky-300 ring-2 ring-sky-400/40 shadow-sky-500/30'
+            : 'bg-slate-900/90 text-sky-400 border-slate-700/80 hover:bg-slate-800'
+        }`}
+        title="Найти меня на карте (Центрировать камеру)"
+      >
+        <Crosshair className={`w-5 h-5 ${autoFollow ? 'animate-spin-slow' : ''}`} />
+        <span className="text-xs font-bold hidden sm:inline">
+          {autoFollow ? 'Слежу за псом' : 'Где я?'}
+        </span>
+      </button>
+    </div>
+  );
 };

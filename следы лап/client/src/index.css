@@ -11,6 +11,12 @@
   z-index: 10;
 }
 
+/* Сброс стандартных белых рамок Leaflet для кастомных маркеров */
+.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
 /* Custom dark scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
