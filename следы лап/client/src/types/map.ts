@@ -1,6 +1,13 @@
 import { FactionId } from './user';
 
-export type BaseMapProvider = 'yandex' | '2gis' | 'google_map' | 'google_satellite' | 'osm' | 'carto_dark';
+export type BaseMapProvider =
+  | 'yandex'
+  | 'google_map'
+  | 'google_hybrid'
+  | 'google_satellite'
+  | 'carto_voyager'
+  | 'osm'
+  | 'carto_dark';
 
 export interface BaseMapLayerInfo {
   id: BaseMapProvider;
@@ -10,6 +17,7 @@ export interface BaseMapLayerInfo {
   attribution: string;
   maxZoom: number;
   subdomains?: string[];
+  isYandex?: boolean;
 }
 
 export const MAP_PROVIDERS: Record<BaseMapProvider, BaseMapLayerInfo> = {
@@ -22,22 +30,14 @@ export const MAP_PROVIDERS: Record<BaseMapProvider, BaseMapLayerInfo> = {
     maxZoom: 19,
     subdomains: ['a', 'b', 'c', 'd']
   },
-  '2gis': {
-    id: '2gis',
-    name: '2GIS Карта',
-    icon: '🟢',
-    url: 'https://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}',
-    attribution: '&copy; 2GIS',
-    maxZoom: 19,
-    subdomains: ['0', '1', '2', '3']
-  },
   yandex: {
     id: 'yandex',
-    name: 'Яндекс.Карты',
+    name: 'Яндекс.Карты (Схема)',
     icon: '🔴',
     url: 'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}&scale=1&lang=ru_RU',
     attribution: '&copy; Яндекс',
     maxZoom: 19,
+    isYandex: true
   },
   google_map: {
     id: 'google_map',
@@ -47,13 +47,30 @@ export const MAP_PROVIDERS: Record<BaseMapProvider, BaseMapLayerInfo> = {
     attribution: '&copy; Google Maps',
     maxZoom: 20,
   },
+  google_hybrid: {
+    id: 'google_hybrid',
+    name: 'Google Спутник + Улицы',
+    icon: '🛰️',
+    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    attribution: '&copy; Google Earth',
+    maxZoom: 20,
+  },
   google_satellite: {
     id: 'google_satellite',
-    name: 'Google Спутник',
-    icon: '🛰️',
+    name: 'Google Чистый спутник',
+    icon: '📷',
     url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
     attribution: '&copy; Google Earth',
     maxZoom: 20,
+  },
+  carto_voyager: {
+    id: 'carto_voyager',
+    name: 'Городской стиль (Voyager)',
+    icon: '🏙️',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    maxZoom: 19,
+    subdomains: ['a', 'b', 'c', 'd']
   },
   osm: {
     id: 'osm',

@@ -7,6 +7,40 @@ import { BotDog } from '../../types/simulation';
 import { HazardMarker, HAZARD_CONFIGS } from '../../types/safety';
 import { getH3Boundary } from '../../services/h3Engine';
 
+// Кастомный слой тайлов для Яндекс.Карт с математической коррекцией эллипсоидальной проекции (EPSG:3395 -> EPSG:3857)
+class YandexCorrectedTileLayer extends L.TileLayer {
+  getTileUrl(coords: L.Coords): string {
+    const z = this._getZoomForUrl();
+    const x = coords.x;
+    const ySpherical = coords.y;
+
+    // 1. Вычисляем точную географическую широту тайла в Spherical Mercator
+    const n = Math.PI - (2 * Math.PI * ySpherical) / Math.pow(2, z);
+    const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+
+    // 2. Преобразуем широту в эллипсоидальный Y для Яндекс WGS-84 (EPSG:3395)
+    const a = 6378137;
+    const b = 6356752.3142;
+    const e = Math.sqrt(1 - (b * b) / (a * a));
+    const latRad = (lat * Math.PI) / 180;
+    const sinPhi = Math.sin(latRad);
+    const numTiles = Math.pow(2, z);
+
+    const yYandex = Math.floor(
+      ((1 -
+        Math.log(
+          Math.tan(Math.PI / 4 + latRad / 2) *
+            Math.pow((1 - e * sinPhi) / (1 + e * sinPhi), e / 2)
+        ) /
+          Math.PI) /
+        2) *
+        numTiles
+    );
+
+    return `https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x=${x}&y=${yYandex}&z=${z}&scale=1&lang=ru_RU`;
+  }
+}
+
 interface HexMapProps {
   currentProvider: BaseMapProvider;
   playerCoords: Coordinates;
@@ -56,7 +90,7 @@ export const HexMap: React.FC<HexMapProps> = ({
     const map = L.map(mapContainerRef.current, {
       center: [playerCoords.lat, playerCoords.lng],
       zoom: 17,
-      minZoom: 13,
+      minZoom: 12,
       maxZoom: 20,
       zoomControl: false
     });
@@ -87,21 +121,32 @@ export const HexMap: React.FC<HexMapProps> = ({
     };
   }, []);
 
-  // 2. Смена базового тайлового слоя карты (Яндекс, 2GIS, Google, OSM, Carto)
+  // 2. Смена базового тайлового слоя карты (Яндекс, Google, OSM, Carto)
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
-    const config = MAP_PROVIDERS[currentProvider];
+    const config = MAP_PROVIDERS[currentProvider] || MAP_PROVIDERS.carto_dark;
 
     if (tileLayerRef.current) {
       map.removeLayer(tileLayerRef.current);
     }
 
-    const newLayer = L.tileLayer(config.url, {
-      attribution: config.attribution,
-      maxZoom: config.maxZoom,
-      subdomains: config.subdomains || ['a', 'b', 'c']
-    });
+    let newLayer: L.TileLayer;
+
+    if (config.isYandex) {
+      // Яндекс с коррекцией эллипсоида
+      newLayer = new YandexCorrectedTileLayer(config.url, {
+        attribution: config.attribution,
+        maxZoom: config.maxZoom
+      });
+    } else {
+      // Стандартные тайлы Spherical Mercator
+      newLayer = L.tileLayer(config.url, {
+        attribution: config.attribution,
+        maxZoom: config.maxZoom,
+        subdomains: config.subdomains || ['a', 'b', 'c']
+      });
+    }
 
     newLayer.addTo(map);
     tileLayerRef.current = newLayer;
