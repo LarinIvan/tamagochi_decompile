@@ -1,0 +1,9 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="fancy-monocle">
+<path id="STRAP" d="M73 45H70V69C70 69 70.796 70 71.5 70C72.204 70 73 69 73 69V45Z" fill="#3B3B3B"/>
+<circle id="OUTER_CIRCLE" cx="47.6905" cy="48.6906" r="21.5" transform="rotate(9.29577 47.6905 48.6906)" fill="#705C17"/>
+<circle id="INNER_CIRCLE" cx="47.6908" cy="48.6907" r="19.2368" transform="rotate(9.29577 47.6908 48.6907)" fill="#DFB82E"/>
+<circle id="GLASS" cx="47.6906" cy="48.6906" r="16.9737" transform="rotate(9.29577 47.6906 48.6906)" fill="#BAE8F8"/>
+<circle id="JOINT" cx="70.9858" cy="42.3324" r="3.46238" transform="rotate(9.29577 70.9858 42.3324)" fill="#DFB82E"/>
+</g>
+</svg>

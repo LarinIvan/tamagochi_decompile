@@ -1,0 +1,639 @@
+# -*- coding: utf-8 -*-
+import os
+
+HTML_CONTENT = r'''<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Finch: Self-Care Pet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/bird-pet-face-new.svg">
+</head>
+<body>
+  <div class="app-root">
+    <!-- ================= TOP BAR ================= -->
+    <header class="top-bar" id="top-bar">
+      <button class="top-btn" id="menu-btn" title="Меню" aria-label="Меню">
+        <img src="assets/icons/menu.svg" alt="Меню" class="btn-icon">
+        <span class="notif-badge-dot"></span>
+      </button>
+
+      <div class="stones-pill" id="stones-pill" title="Радужные камни">
+        <img src="assets/icons/shop/rainbow-stone.svg" alt="Камни" class="stone-icon">
+        <span class="stone-count" id="header-stone-count">165</span>
+        <button class="stone-add-btn" id="add-stones-quick-btn" title="Пополнить">+</button>
+      </div>
+
+      <div class="top-right-group">
+        <button class="top-btn" id="robin-quick-btn" title="Магазин мебели Робин">
+          <img src="assets/icons/shop/robin-head.svg" alt="Робин" class="btn-icon">
+        </button>
+        <button class="top-btn" id="inbox-btn" title="Уведомления и подарки">
+          <img src="assets/icons/in_app_notif/envelope_icon.svg" alt="Почта" class="btn-icon">
+          <span class="notif-badge-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ================= MAIN SCROLLABLE CONTENT ================= -->
+    <main class="main-content" id="main-content">
+
+      <!-- ================= 1. TAB: HOME ================= -->
+      <section class="tab-screen active" id="tab-home">
+        <!-- Landscape Stage -->
+        <div class="scene-stage" id="scene-stage">
+          <img src="assets/images/locations/bg-finchie-forest-new.svg" alt="Finchie Forest" class="scene-bg-img">
+
+          <!-- Centered Pet -->
+          <div class="pet-wrapper" id="pet-touch-target" title="Погладь птичку!">
+            <div class="pet-speech-bubble" id="pet-speech-bubble">Чирик! Я так рада тебя видеть! ❤️</div>
+            <div class="pet-character-container">
+              <img src="assets/images/static-bird-poses/happy-standing-2.svg" alt="Птенец" class="pet-svg" id="home-pet-img">
+              <div class="pet-equipped-hat" id="home-pet-hat"></div>
+            </div>
+            <div class="pet-ground-shadow"></div>
+            <div class="pet-badge-name" id="home-pet-name-badge">
+              <span id="pet-display-name">Лютик</span>
+              <span class="pet-stage-tag" id="pet-stage-tag">(Малыш)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scrollable cards below scene -->
+        <div class="cards-column">
+          <!-- 1st Adventure Card -->
+          <div class="card adventure-card" id="adventure-card">
+            <div class="adventure-card-header">
+              <div class="adventure-title-group">
+                <img src="assets/icons/halloween/icon-candy-orange.svg" alt="Тыква" class="adv-header-icon">
+                <span class="adv-title" id="adv-title-text">1-е Приключение в лесу</span>
+              </div>
+              <span class="adv-ratio" id="adv-energy-ratio">0/15</span>
+            </div>
+            
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="adv-progress-bar" style="width: 0%;"></div>
+            </div>
+
+            <p class="adv-desc" id="adv-desc-text">
+              Лютику нужно 15 энергии, чтобы отправиться в лес Finchie Forest! Выполняй цели ниже, чтобы зарядить птичку.
+            </p>
+
+            <button class="primary-btn pulse-glow" id="send-adventure-btn" style="display: none;">
+              🚀 Отправить Лютика в Finchie Forest!
+            </button>
+            <button class="primary-btn complete-btn" id="finish-adventure-btn" style="display: none;">
+              ✨ Завершить поход и открыть находку!
+            </button>
+          </div>
+
+          <!-- Daily Goals Card -->
+          <div class="card goals-card" id="goals-card">
+            <div class="goals-card-header" id="goals-accordion-toggle">
+              <div class="goals-header-left">
+                <h2 class="goals-count-heading" id="goals-left-heading">4 цели на сегодня</h2>
+                <span class="goals-sub-badge">Начало дня ▾</span>
+              </div>
+              <span class="goals-header-tag">Все цели</span>
+            </div>
+
+            <div class="goals-list" id="goals-list">
+              <!-- Dynamically rendered or static goals -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating Action Button (+ Add Goal) -->
+        <button class="fab-btn" id="fab-add-goal" title="Добавить новую цель">
+          <img src="assets/icons/plus.svg" alt="+" class="fab-icon">
+        </button>
+      </section>
+
+      <!-- ================= 2. TAB: QUESTS (Birbs & Broomsticks) ================= -->
+      <section class="tab-screen" id="tab-quests">
+        <div class="quests-container">
+          <!-- Seasonal Banner -->
+          <div class="seasonal-banner">
+            <div class="seasonal-badge">🎃 ХЭЛЛОУИН 2026</div>
+            <h1 class="seasonal-title">BIRBS & BROOMSTICKS</h1>
+            <p class="seasonal-countdown">⏰ Осталось 4 дня 5 часов</p>
+            <div class="seasonal-tracks">
+              <div class="track-tier free-tier">
+                <span class="tier-label">Обычный</span>
+                <div class="tier-rewards-row">
+                  <div class="reward-box claimed"><img src="assets/icons/shop/rainbow-stone.svg"><span>100</span></div>
+                  <div class="reward-box"><img src="assets/icons/halloween/icon-candy-orange.svg"><span>5</span></div>
+                  <div class="reward-box"><img src="assets/icons/chest-close.svg"><span>Сундук</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Daily Quests -->
+          <div class="card quest-group-card">
+            <h3 class="group-heading">Ежедневные квесты</h3>
+            <div class="quest-item">
+              <div class="quest-info">
+                <span class="quest-title">Заряди птичку энергией (0/15)</span>
+                <span class="quest-reward">+10 🍬</span>
+              </div>
+              <button class="claim-btn disabled" id="claim-quest-1">Забрать</button>
+            </div>
+            <div class="quest-item">
+              <div class="quest-info">
+                <span class="quest-title">Выполни 3 цели дня</span>
+                <span class="quest-reward">+15 🍬</span>
+              </div>
+              <button class="claim-btn disabled" id="claim-quest-2">Забрать</button>
+            </div>
+            <div class="quest-item">
+              <div class="quest-info">
+                <span class="quest-title">Отправь Good Vibes в Дерево друзей</span>
+                <span class="quest-reward">+5 🍬</span>
+              </div>
+              <button class="claim-btn" id="claim-quest-3">Выполнить</button>
+            </div>
+          </div>
+
+          <!-- Special Quests -->
+          <div class="card quest-group-card">
+            <h3 class="group-heading">Особые задания</h3>
+            <div class="quest-item">
+              <div class="quest-info">
+                <span class="quest-title">Привяжи яйцо микропета к цели</span>
+                <span class="quest-reward">+50 💎</span>
+              </div>
+              <button class="claim-btn" id="claim-special-1">Начать</button>
+            </div>
+            <div class="quest-item">
+              <div class="quest-info">
+                <span class="quest-title">Примерь 3 наряда в магазине Приклза</span>
+                <span class="quest-reward">+20 💎</span>
+              </div>
+              <button class="claim-btn" id="claim-special-2">В магазин</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 3. TAB: SHOP ================= -->
+      <section class="tab-screen" id="tab-shop">
+        <div class="shop-container">
+          <!-- Shop Selector Tabs -->
+          <div class="shop-switcher">
+            <button class="shop-tab-btn active" id="shop-switch-prickles">
+              <img src="assets/icons/shop/prickles-head.svg" class="shop-tab-avatar">
+              <span>Мистер Приклз (Одежда)</span>
+            </button>
+            <button class="shop-tab-btn" id="shop-switch-robin">
+              <img src="assets/icons/shop/robin-head.svg" class="shop-tab-avatar">
+              <span>Робин (Мебель)</span>
+            </button>
+          </div>
+
+          <!-- Merchant Header -->
+          <div class="merchant-banner" id="merchant-banner">
+            <div class="merchant-bubble" id="merchant-bubble">
+              «Добро пожаловать в ателье! Выбирай самые стильные шляпы и наряды!»
+            </div>
+            <div class="refresh-countdown">
+              <span>Обновление через 04:32:10</span>
+              <button class="refresh-btn" id="shop-manual-refresh-btn">🔄 Обновить (10 💎)</button>
+            </div>
+          </div>
+
+          <!-- Shop Grid -->
+          <div class="shop-items-grid" id="shop-items-grid">
+            <!-- Dynamically populated from state -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. TAB: BAG (Backpack & 2D Room) ================= -->
+      <section class="tab-screen" id="tab-bag">
+        <div class="bag-container">
+          <!-- Bag Switcher -->
+          <div class="bag-switcher">
+            <button class="bag-subtab-btn active" id="bag-subtab-room">🏠 Моя комната</button>
+            <button class="bag-subtab-btn" id="bag-subtab-outfit">🎒 Гардероб</button>
+          </div>
+
+          <!-- 2D Room Decorator -->
+          <div class="room-screen-view" id="room-screen-view">
+            <div class="room-2d-canvas" id="room-2d-canvas">
+              <!-- Ceiling Lamp -->
+              <img src="assets/images/birdhouse/simple-ceiling-lamp.svg" alt="Лампа" class="room-slot-obj slot-lamp" id="slot-lamp">
+              <!-- Arched Door -->
+              <img src="assets/images/birdhouse/simple-arched-door.svg" alt="Дверь" class="room-slot-obj slot-door" id="slot-door">
+              <!-- Window -->
+              <img src="assets/images/birdhouse/simple-round-window.svg" alt="Окно" class="room-slot-obj slot-window" id="slot-window">
+              <!-- Clock -->
+              <img src="assets/images/birdhouse/woodsy-clock-square-icon.svg" alt="Часы" class="room-slot-obj slot-clock" id="slot-clock">
+              <!-- Dresser -->
+              <img src="assets/images/birdhouse/simple-dresser.svg" alt="Комод" class="room-slot-obj slot-dresser" id="slot-dresser">
+              <!-- Bed / Nest -->
+              <img src="assets/images/birdhouse/simple-nest.svg" alt="Кровать" class="room-slot-obj slot-bed" id="slot-bed">
+              <!-- Pet relaxing in room -->
+              <img src="assets/images/static-bird-poses/happy-standing-2.svg" alt="Птенец дома" class="room-pet-obj" id="room-pet">
+            </div>
+
+            <!-- Furniture Decorator Tray -->
+            <div class="furniture-tray">
+              <div class="tray-title">Выбери мебель для комнаты:</div>
+              <div class="furniture-slots-row" id="furniture-slots-row">
+                <!-- Clickable furniture items -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Wardrobe Tray -->
+          <div class="wardrobe-screen-view" id="wardrobe-screen-view" style="display: none;">
+            <div class="tray-title">Твой гардероб:</div>
+            <div class="wardrobe-items-grid" id="wardrobe-items-grid">
+              <!-- Clickable apparel items -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 5. TAB: TREE TOWN (Friends) ================= -->
+      <section class="tab-screen" id="tab-friends">
+        <div class="friends-container">
+          <div class="card tree-code-card">
+            <span class="friend-code-title">Твой код дружбы:</span>
+            <div class="friend-code-box">
+              <span class="code-value" id="my-friend-code">1RBQYY8KG4</span>
+              <button class="copy-code-btn" id="copy-friend-code-btn">📋 Скопировать</button>
+            </div>
+            <div class="add-friend-row">
+              <input type="text" class="friend-input" id="friend-input-code" placeholder="Введи код друга...">
+              <button class="add-friend-btn" id="add-friend-submit-btn">+ Добавить</button>
+            </div>
+          </div>
+
+          <!-- Friends List on the Tree -->
+          <div class="card friends-list-card">
+            <h3 class="group-heading">Друзья в Tree Town</h3>
+            <div class="friend-row">
+              <img src="assets/icons/bird-pet-face-new.svg" class="friend-avatar">
+              <div class="friend-meta">
+                <span class="friend-name">Бабуля & Чирик</span>
+                <span class="friend-status">Онлайн • Отправила объятия 🫂</span>
+              </div>
+              <button class="send-vibes-btn" onclick="sendGoodVibes('Чирик')">💌 Ответить</button>
+            </div>
+            <div class="friend-row">
+              <img src="assets/icons/shop/robin-head.svg" class="friend-avatar">
+              <div class="friend-meta">
+                <span class="friend-name">Профессор Оутмил</span>
+                <span class="friend-status">Гуляет в Finchie Forest</span>
+              </div>
+              <button class="send-vibes-btn" onclick="sendGoodVibes('Оутмил')">❤️ Поддержать</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 6. TAB: PROFILE ================= -->
+      <section class="tab-screen" id="tab-profile">
+        <div class="profile-container">
+          <!-- Bird Passport Card -->
+          <div class="card passport-card">
+            <div class="passport-header">
+              <img src="assets/images/static-bird-poses/happy-standing-2.svg" class="passport-avatar" id="passport-avatar-img">
+              <div class="passport-info">
+                <h2 class="passport-name" id="passport-name">Лютик</h2>
+                <span class="passport-meta" id="passport-age">Малыш • 2 дня вместе</span>
+                <span class="passport-pronouns">Местоимения: Они / Их</span>
+                <div class="passport-code-pill">Код: 1RBQYY8KG4</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Streak Card -->
+          <div class="card streak-card" id="open-streak-modal-btn">
+            <div class="streak-left">
+              <img src="assets/icons/streak_star.svg" alt="Стрик" class="streak-icon">
+              <div class="streak-texts">
+                <span class="streak-title">Стрик 2 дня!</span>
+                <span class="streak-sub">Отличный старт заботы о себе</span>
+              </div>
+            </div>
+            <span class="streak-arrow">➔</span>
+          </div>
+
+          <!-- Notebooks Row -->
+          <div class="notebooks-grid">
+            <div class="notebook-card" id="open-micropets-btn">
+              <img src="assets/icons/micropets/incubator.svg" class="nb-icon">
+              <span class="nb-title">Микропеты</span>
+              <span class="nb-sub" id="micropet-summary-text">Яйцо в инкубаторе</span>
+            </div>
+            <div class="notebook-card" id="open-discoveries-btn">
+              <img src="assets/icons/book-pages.svg" class="nb-icon">
+              <span class="nb-title">Открытия</span>
+              <span class="nb-sub" id="discoveries-summary-text">1 история в лесу</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ================= BOTTOM NAVIGATION BAR ================= -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button class="nav-tab active" data-tab="tab-home" id="nav-btn-home">
+        <img src="assets/icons/home_button_full.svg" alt="Home" class="nav-icon">
+        <span class="nav-label">Главная</span>
+      </button>
+
+      <button class="nav-tab" data-tab="tab-quests" id="nav-btn-quests">
+        <img src="assets/icons/widget-icon-for-quest.svg" alt="Quests" class="nav-icon">
+        <span class="nav-label">Квесты</span>
+        <span class="nav-badge-dot">!</span>
+      </button>
+
+      <button class="nav-tab" data-tab="tab-shop" id="nav-btn-shop">
+        <img src="assets/icons/shop.svg" alt="Shop" class="nav-icon">
+        <span class="nav-label">Магазин</span>
+        <span class="nav-badge-pill">NEW</span>
+      </button>
+
+      <button class="nav-tab" data-tab="tab-bag" id="nav-btn-bag">
+        <img src="assets/icons/backpack.svg" alt="Bag" class="nav-icon">
+        <span class="nav-label">Рюкзак</span>
+      </button>
+
+      <button class="nav-tab" data-tab="tab-friends" id="nav-btn-friends">
+        <img src="assets/icons/tree.svg" alt="Friends" class="nav-icon">
+        <span class="nav-label">Друзья</span>
+      </button>
+
+      <button class="nav-tab" data-tab="tab-profile" id="nav-btn-profile">
+        <img src="assets/icons/bird-pet-face-new.svg" alt="Profile" class="nav-icon">
+        <span class="nav-label">Профиль</span>
+      </button>
+    </nav>
+
+    <!-- ================= MODALS & DRAWERS ================= -->
+
+    <!-- 1. Hamburger Menu Drawer -->
+    <div class="drawer-overlay" id="menu-drawer-overlay">
+      <div class="drawer-panel" id="menu-drawer-panel">
+        <div class="drawer-header">
+          <div class="drawer-pet-preview">
+            <img src="assets/icons/bird-pet-face-new.svg" class="drawer-avatar">
+            <div>
+              <div class="drawer-pet-title" id="drawer-pet-name">Лютик</div>
+              <div class="drawer-pet-sub">Finch v3.73.229 (1751)</div>
+            </div>
+          </div>
+          <button class="drawer-close-btn" id="close-menu-drawer-btn">✕</button>
+        </div>
+
+        <div class="drawer-content">
+          <div class="drawer-item" id="drawer-open-onboarding">
+            <span>🐣 Перезапустить онбординг / Высидеть яйцо</span>
+            <span>➔</span>
+          </div>
+          <div class="drawer-item" id="drawer-export-backup">
+            <span>💾 Сохранить резервную копию данных</span>
+            <span>➔</span>
+          </div>
+          <div class="drawer-item">
+            <span>⏸️ Режим паузы (Pause mode)</span>
+            <input type="checkbox" id="pause-mode-toggle" class="custom-switch">
+          </div>
+          <div class="drawer-item" id="drawer-sound-toggle">
+            <span>🔊 Звуковые эффекты</span>
+            <span id="sound-status-label">Вкл</span>
+          </div>
+          <div class="drawer-item" id="drawer-reset-app">
+            <span style="color: #e53935;">⚠️ Сброс прогресса до начального</span>
+            <span>➔</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Streak Calendar Modal -->
+    <div class="modal-overlay" id="streak-modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">Календарь стрика</h2>
+          <button class="modal-close-btn" id="close-streak-modal-btn">✕</button>
+        </div>
+        <div class="streak-cal-summary">
+          <div class="cal-stat">
+            <span class="cal-stat-num">2</span>
+            <span class="cal-stat-label">Текущий стрик</span>
+          </div>
+          <div class="cal-stat">
+            <span class="cal-stat-num">2</span>
+            <span class="cal-stat-label">Лучший стрик</span>
+          </div>
+        </div>
+
+        <div class="cal-month-header">Октябрь 2026</div>
+        <div class="cal-grid" id="streak-cal-grid">
+          <!-- Days 1 to 31 rendered via JS -->
+        </div>
+
+        <div class="streak-bandaids-card">
+          <div class="bandaid-info">
+            <img src="assets/icons/streak-bandaid.svg" class="bandaid-icon">
+            <div>
+              <div class="bandaid-title">Защита стрика (Streak Savers)</div>
+              <div class="bandaid-sub">Автоматически защищает стрик, если ты пропустишь день</div>
+            </div>
+          </div>
+          <span class="bandaid-count">2/2 В НАЛИЧИИ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Add Goal Modal -->
+    <div class="modal-overlay" id="add-goal-modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">Новая цель</h2>
+          <button class="modal-close-btn" id="close-add-goal-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <label class="input-label">Что ты хочешь сделать?</label>
+          <input type="text" class="text-input" id="new-goal-title-input" placeholder="Например: Погулять на свежем воздухе 15 минут">
+
+          <label class="input-label">Иконка цели:</label>
+          <div class="icon-picker-row" id="goal-icon-picker">
+            <button class="icon-choice active" data-icon="1f33b.svg"><img src="assets/twemojis/1f33b.svg"></button>
+            <button class="icon-choice" data-icon="1f9fc.svg"><img src="assets/twemojis/1f9fc.svg"></button>
+            <button class="icon-choice" data-icon="1faa5.svg"><img src="assets/twemojis/1faa5.svg"></button>
+            <button class="icon-choice" data-icon="1f4a7.svg"><img src="assets/twemojis/1f4a7.svg"></button>
+          </div>
+
+          <div class="reward-preview-pill">
+            Награда за выполнение: <strong>+5 Радужных камней 💎</strong> и <strong>+5 Энергии похода ⚡</strong>
+          </div>
+
+          <button class="primary-btn" id="submit-new-goal-btn">Создать цель</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Adventure Discovery Modal -->
+    <div class="modal-overlay" id="adventure-modal-overlay">
+      <div class="modal-card adventure-discovery-card">
+        <div class="discovery-hero">
+          <img src="assets/images/locations/bg-finchie-forest-new.svg" class="discovery-bg">
+          <img src="assets/images/static-bird-poses/happy-standing-2.svg" class="discovery-pet-pose">
+        </div>
+        <div class="modal-body">
+          <div class="discovery-tag">НОВОЕ ОТКРЫТИЕ В ЛЕСУ!</div>
+          <h2 class="discovery-title" id="discovery-story-title">Волшебное дупло старого дуба</h2>
+          <p class="discovery-text" id="discovery-story-text">
+            Гуляя по тропинке Finchie Forest, Лютик услышал шорох в листве и заглянул в дупло старого дуба. Там лежало блестящее крошечное яйцо микропета!
+          </p>
+
+          <div class="discovery-rewards-box">
+            <div class="reward-entry">
+              <img src="assets/icons/shop/rainbow-stone.svg">
+              <span>+30 Радужных камней</span>
+            </div>
+            <div class="reward-entry">
+              <img src="assets/icons/micropets/incubator.svg">
+              <span>+ Яйцо микропета (Бэтрик)!</span>
+            </div>
+          </div>
+
+          <button class="primary-btn" id="claim-adventure-discovery-btn">
+            Забрать награды и обнять Лютика! ❤️
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Onboarding / Egg Hatching NUX Modal -->
+    <div class="modal-overlay" id="onboarding-modal-overlay">
+      <div class="modal-card onboarding-card">
+        <!-- Step 1: Warm the egg -->
+        <div class="nux-step active" id="nux-step-1">
+          <h2 class="nux-title">Твое яйцо ждет заботы!</h2>
+          <p class="nux-sub">Коснись яйца несколько раз, чтобы согреть его и помочь птенцу вылупиться!</p>
+          
+          <div class="egg-stage" id="egg-touch-target">
+            <img src="assets/images/egg/egg-bird.svg" alt="Яйцо" class="egg-svg" id="nux-egg-img">
+            <div class="egg-sparks" id="egg-sparks"></div>
+          </div>
+
+          <div class="egg-warmth-bar-track">
+            <div class="egg-warmth-bar-fill" id="egg-warmth-fill" style="width: 0%;"></div>
+          </div>
+          <span class="egg-hint">Нажимай на яйцо! (0/3)</span>
+        </div>
+
+        <!-- Step 2: Name & Color -->
+        <div class="nux-step" id="nux-step-2">
+          <h2 class="nux-title">Птенец вылупился! 🎉</h2>
+          <div class="hatched-pet-showcase">
+            <img src="assets/images/static-bird-poses/happy-standing-2.svg" class="hatched-pet-svg" id="nux-pet-preview-img">
+          </div>
+          
+          <label class="input-label">Как ты назовешь свою птичку?</label>
+          <input type="text" class="text-input" id="nux-pet-name-input" value="Лютик" placeholder="Введи имя...">
+
+          <label class="input-label">Выбери цвет оперения:</label>
+          <div class="color-picker-row">
+            <button class="color-chip active" data-color="#58B790" style="background:#58B790;"></button>
+            <button class="color-chip" data-color="#42A5F5" style="background:#42A5F5;"></button>
+            <button class="color-chip" data-color="#AB47BC" style="background:#AB47BC;"></button>
+            <button class="color-chip" data-color="#FFA726" style="background:#FFA726;"></button>
+            <button class="color-chip" data-color="#78909C" style="background:#78909C;"></button>
+          </div>
+
+          <button class="primary-btn" id="nux-continue-btn-2">Продолжить</button>
+        </div>
+
+        <!-- Step 3: Starter Survey -->
+        <div class="nux-step" id="nux-step-3">
+          <h2 class="nux-title">Что для тебя главное сейчас?</h2>
+          <p class="nux-sub">Выбери, в чем Finch может тебе помочь сегодня:</p>
+          
+          <div class="survey-options-list">
+            <label class="survey-option">
+              <input type="checkbox" checked value="bed">
+              <span>🌅 Легче просыпаться и вставать с кровати</span>
+            </label>
+            <label class="survey-option">
+              <input type="checkbox" checked value="water">
+              <span>💧 Пить больше воды в течение дня</span>
+            </label>
+            <label class="survey-option">
+              <input type="checkbox" checked value="calm">
+              <span>🧘 Справляться со стрессом и находить покой</span>
+            </label>
+            <label class="survey-option">
+              <input type="checkbox" checked value="teeth">
+              <span>🪥 Не забывать о базовой гигиене и заботе</span>
+            </label>
+          </div>
+
+          <button class="primary-btn" id="nux-finish-btn">Встретить Лютика в лесу! 🌲</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Micropets Incubator Modal -->
+    <div class="modal-overlay" id="micropets-modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">Коллекция микропетов</h2>
+          <button class="modal-close-btn" id="close-micropets-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="incubator-card">
+            <img src="assets/icons/micropets/incubator.svg" class="incubator-icon">
+            <div class="incubator-meta">
+              <span class="incubator-title">Яйцо летучей мышки (Бэтрик)</span>
+              <span class="incubator-sub" id="incubator-progress-text">Привязано к цели: Выполнить 7 раз</span>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill" id="incubator-progress-fill" style="width: 28%;"></div>
+              </div>
+              <span class="incubator-ratio" id="incubator-ratio-text">2/7 выполнено</span>
+            </div>
+          </div>
+
+          <h3 class="group-heading">Твои микропеты</h3>
+          <div class="micropets-grid">
+            <div class="micropet-item unlocked">
+              <img src="assets/icons/micropets/micropet-batrick.svg">
+              <span>Бэтрик</span>
+            </div>
+            <div class="micropet-item">
+              <img src="assets/icons/micropets/micropet-aurora.svg" style="opacity: 0.35;">
+              <span>Аврора (Заперто)</span>
+            </div>
+            <div class="micropet-item">
+              <img src="assets/icons/micropets/micropet-agnes.svg" style="opacity: 0.35;">
+              <span>Агнес (Заперто)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confetti & Flying Emotes Canvas -->
+    <canvas id="fx-canvas" class="fx-canvas"></canvas>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+'''
+
+with open('web/index.html', 'w', encoding='utf-8') as f:
+    f.write(HTML_CONTENT)
+
+print("Generated web/index.html successfully!")

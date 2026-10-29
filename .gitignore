@@ -36,3 +36,9 @@ ghidra_12.1.4/
 # Blutter and temporary decompilation builds
 blutter/
 apps/finch/extracted_arm64/
+
+# Binaries, keys and decompilation tools
+flutterdec/target/
+debug.keystore
+*.idsig
+release.RE.apk
