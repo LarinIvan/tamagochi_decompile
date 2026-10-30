@@ -1,0 +1,47 @@
+Signature-Version: 1.0
+Created-By: 1.0 (Android)
+SHA1-Digest-Manifest: Ob9zVRYOU39bmk56WzQhY0z15H4=
+X-Android-APK-Signed: 2, 3
+
+Name: AndroidManifest.xml
+SHA1-Digest: kLsJIWNtHYUxtuBNe4aN2w9KNG0=
+
+Name: lib/arm64-v8a/libapp.so
+SHA1-Digest: rEOPHB22IYJqYbpPWtQzGiZAHus=
+
+Name: lib/arm64-v8a/libbarhopper_v3.so
+SHA1-Digest: gAoLm5xUQ6Blz4GSY+HtOCLqobI=
+
+Name: lib/arm64-v8a/libdartjni.so
+SHA1-Digest: mrH8qDIvRU3yacBecl/Bx/t+Oio=
+
+Name: lib/arm64-v8a/libdatastore_shared_counter.so
+SHA1-Digest: 2QroeYLrBWw5bbYB9vLjZMnYZKg=
+
+Name: lib/arm64-v8a/libflutter.so
+SHA1-Digest: DqgQKcGeaJngHJ+arvO01QTqXC8=
+
+Name: lib/arm64-v8a/libimage_processing_util_jni.so
+SHA1-Digest: FTVl6sKpmz1YsCd/jn47jvVIWk8=
+
+Name: lib/arm64-v8a/librive_native.so
+SHA1-Digest: UGILTjLDdD3rozMXfVBV1Bz8+kc=
+
+Name: lib/arm64-v8a/libsentry-android.so
+SHA1-Digest: HoKlzIWjWsH8W/iz+XMu4rXhj14=
+
+Name: lib/arm64-v8a/libsentry.so
+SHA1-Digest: O1UH0XOBFIP6195sh4iQbO7M1nM=
+
+Name: lib/arm64-v8a/libsigner.so
+SHA1-Digest: iqonev1CYb7jfdQ/kTu8/e7n91M=
+
+Name: lib/arm64-v8a/libsqlite3.so
+SHA1-Digest: w8D3PygyPY43trIBdQ9OlaFc6OQ=
+
+Name: lib/arm64-v8a/libsurface_util_jni.so
+SHA1-Digest: s5rdQCX3afW9kT2prSx3eJq92Aw=
+
+Name: stamp-cert-sha256
+SHA1-Digest: Bs40BvDZ1xrbgQrPTD2x5w/NfHQ=
+

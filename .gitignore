@@ -33,3 +33,5 @@ ghidra_12.1.4/
 
 *.apk
 *.apk.idsig
+*.xapk
+*.xapk.idsig
